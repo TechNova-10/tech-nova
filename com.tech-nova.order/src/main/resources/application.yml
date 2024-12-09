@@ -1,12 +1,12 @@
 server:
-  port: # company 서비스 포트 번호
+  port: # Order 서비스 포트 번호
 
 spring:
   application:
-    name: company-service  # 서비스 이름
+    name: order-service  # 서비스 이름
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/company_db
+    url: jdbc:postgresql://localhost:5432/order_db
     username: postgres
     password: database123
 
