@@ -10,7 +10,5 @@ import java.util.UUID;
 public interface DeliveryManagerRepositoryImpl extends JpaRepository<DeliveryManager, UUID>, DeliveryManagerRepository {
     @Query("SELECT COALESCE(MAX(dm.deliveryOrderSequence), 0) FROM DeliveryManager dm WHERE dm.assignedHubId = :assignedHubId")
     Integer findMaxDeliveryOrderByHubId(UUID assignedHubId);
-
-    boolean existsByAssignedHubIdAndDeliveryOrderSequence(UUID assignedHubId, Integer deliveryOrderSequence);
 }
 
