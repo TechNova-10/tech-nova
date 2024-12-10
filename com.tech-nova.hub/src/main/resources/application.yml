@@ -15,7 +15,7 @@ spring:
         format_sql: true
         highlight_sql: true
 server:
-  port: 19092
+  port: 19093
 
 eureka:
   client:
