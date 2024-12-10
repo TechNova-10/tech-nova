@@ -1,6 +1,6 @@
 package com.tech_nova.hub.domain.model;
 
-import com.tech_nova.hub.application.dtos.res.HubRequestDto;
+import com.tech_nova.hub.application.dtos.req.HubRequestDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -35,8 +35,8 @@ public class Hub {
   @Column(name = "hub_manager_id", nullable = false)
   private UUID hubManagerId;
 
-  @Column(name = "hub_name", nullable = false)
-  private String hubName;
+  @Column(name = "name", nullable = false)
+  private String name;
 
   @Column(name = "address_code", nullable = false)
   private String addressCode;
@@ -77,7 +77,7 @@ public class Hub {
   public static Hub createHub(HubRequestDto hubRequestDto, UUID userId) {
     return Hub.builder()
         .hubManagerId(userId)
-        .hubName(hubRequestDto.getHubName())
+        .name(hubRequestDto.getName())
         .addressCode(hubRequestDto.getAddressCode())
         .roadAddress(hubRequestDto.getRoadAddress())
         .detailedAddress(hubRequestDto.getDetailedAddress())

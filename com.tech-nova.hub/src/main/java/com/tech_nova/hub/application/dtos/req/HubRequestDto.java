@@ -1,4 +1,4 @@
-package com.tech_nova.hub.application.dtos.res;
+package com.tech_nova.hub.application.dtos.req;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public class HubRequestDto {
 
-  private String hubName;
+  private String name;
 
   private String addressCode;
 
