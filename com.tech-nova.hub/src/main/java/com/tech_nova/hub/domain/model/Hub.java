@@ -87,4 +87,14 @@ public class Hub {
         .updatedBy(userId)
         .build();
   }
+
+  public void updateHub(HubRequestDto hubRequestDto, UUID userId) {
+    this.name = hubRequestDto.getName();
+    this.addressCode = hubRequestDto.getAddressCode();
+    this.roadAddress = hubRequestDto.getRoadAddress();
+    this.detailedAddress = hubRequestDto.getDetailedAddress();
+    this.latitude = hubRequestDto.getLatitude();
+    this.longitude = hubRequestDto.getLongitude();
+    this.updatedBy = userId;
+  }
 }

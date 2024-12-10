@@ -26,6 +26,8 @@ public class HubResponseDto {
 
   private double longitude;
 
+  private boolean isDeleted;
+
   private LocalDateTime createdAt;
 
   private UUID createdBy;
@@ -44,6 +46,7 @@ public class HubResponseDto {
         .detailedAddress(hub.getDetailedAddress())
         .latitude(hub.getLatitude())
         .longitude(hub.getLongitude())
+        .isDeleted(hub.isDeleted())
         .createdAt(hub.getCreatedAt())
         .createdBy(hub.getCreatedBy())
         .updatedAt(hub.getUpdatedAt())
