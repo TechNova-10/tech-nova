@@ -44,6 +44,13 @@ public class HubService {
     findHubById(hubId).updateHub(hubRequestDto, userId);
   }
 
+  @Transactional
+  public void deleteHub(UUID hubId, UUID userId, String role) {
+
+    validateMasterRole(role);
+    findHubById(hubId).deleteHub(userId);
+  }
+
   private void validateMasterRole(String role) {
     if (!"MASTER".equals(role)) {
       throw new MasterRoleRequiredException("마스터 권한을 가진 사용자가 아닙니다.");

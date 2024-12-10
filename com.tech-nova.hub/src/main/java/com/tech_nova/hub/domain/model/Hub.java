@@ -74,6 +74,12 @@ public class Hub {
   @Column(name = "updated_by", nullable = false)
   private UUID updatedBy;
 
+  @Column(name = "deleted_at")
+  private LocalDateTime deleted_at;
+
+  @Column(name = "deleted_By", nullable = false)
+  private UUID deleted_By;
+
   public static Hub createHub(HubRequestDto hubRequestDto, UUID userId) {
     return Hub.builder()
         .hubManagerId(userId)
@@ -96,5 +102,11 @@ public class Hub {
     this.latitude = hubRequestDto.getLatitude();
     this.longitude = hubRequestDto.getLongitude();
     this.updatedBy = userId;
+  }
+
+  public void deleteHub(UUID userId) {
+    this.isDeleted = true;
+    this.deleted_at = LocalDateTime.now();
+    this.deleted_By = userId;
   }
 }

@@ -8,6 +8,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -67,6 +68,22 @@ public class HubController {
         ApiResponseDto.<Void>builder()
             .code(200)
             .message("허브 수정 완료")
+            .build(),
+        HttpStatus.OK
+    );
+  }
+
+  @DeleteMapping("/{hubId")
+  public ResponseEntity<ApiResponseDto<Void>> deleteHub(
+      @PathVariable UUID hubId,
+      @RequestHeader(value = "userId", required = true) UUID userId,
+      @RequestHeader(value = "role", required = true) String role
+  ) {
+    hubService.deleteHub(hubId, userId, role);
+    return new ResponseEntity<>(
+        ApiResponseDto.<Void>builder()
+            .code(200)
+            .message("허브 삭제 완료")
             .build(),
         HttpStatus.OK
     );
