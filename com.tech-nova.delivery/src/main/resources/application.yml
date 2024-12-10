@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: product-service
+    name: delivery-service
   profiles:
     default: dev
   data:
