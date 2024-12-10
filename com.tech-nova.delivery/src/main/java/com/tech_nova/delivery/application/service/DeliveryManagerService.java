@@ -20,7 +20,7 @@ public class DeliveryManagerService {
     @Transactional
     public UUID createDeliveryManager(DeliveryManagerDto request) {
         if (deliveryManagerRepository.existsByManagerUserId(request.getManagerUserId())) {
-            throw new IllegalArgumentException("The manager user ID is already registered.");
+            throw new IllegalArgumentException("해당 사용자는 이미 등록되어 있습니다.");
         }
 
         Integer deliveryOrderSequence = request.getDeliveryOrderSequence();
@@ -28,7 +28,7 @@ public class DeliveryManagerService {
         if (deliveryOrderSequence == null) {
             deliveryOrderSequence = deliveryManagerRepository.findMaxDeliveryOrderByHubId(request.getAssignedHubId()) + 1;
         } else if (deliveryOrderSequence <= 0) {
-            throw new IllegalArgumentException("Delivery order sequence must be greater than 0.");
+            throw new IllegalArgumentException("배송 순서 번호는 0보다 커야 합니다.");
         } else {
             checkDeliveryOrderSequenceExists(request.getAssignedHubId(), deliveryOrderSequence);
         }
