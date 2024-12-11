@@ -1,14 +1,12 @@
 package com.tech_nova.delivery.domain.model.delivery;
 
-public enum DeliveryStatus {
+public enum DeliveryHubStatus {
     HUB_WAITING,
     HUB_MOVING,
-    HUB_ARRIVE,
-    COMPANY_MOVING,
-    DELIVERY_COMPLETED;
+    HUB_ARRIVE;
 
-    public static DeliveryStatus fromString(String status) {
-        for (DeliveryStatus deliveryStatus : DeliveryStatus.values()) {
+    public static DeliveryHubStatus fromString(String status) {
+        for (DeliveryHubStatus deliveryStatus : DeliveryHubStatus.values()) {
             if (deliveryStatus.name().equalsIgnoreCase(status)) {
                 return deliveryStatus;
             }
