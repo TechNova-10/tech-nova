@@ -15,7 +15,7 @@ import java.util.UUID;
 public class DeliveryManager extends Timestamped {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "delivery_id")
+    @Column(name = "delivery_manager_id")
     private UUID id;
 
     @Column(nullable = false)
