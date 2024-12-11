@@ -2,6 +2,7 @@ package com.tech_nova.delivery.presentation.exception.handler;
 
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
+import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,7 +21,7 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.badRequest().body(response);
     }
-    
+
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ApiResponseDto<String>> nullPointerExceptionHandler(NullPointerException ex) {
         ApiResponseDto<String> response = ApiResponseDto.<String>builder()
@@ -34,6 +35,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DeliveryOrderSequenceAlreadyExistsException.class)
     public ResponseEntity<ApiResponseDto<String>> handleDeliveryOrderSequenceAlreadyExistsException(DeliveryOrderSequenceAlreadyExistsException ex) {
+        ApiResponseDto<String> response = ApiResponseDto.<String>builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .statusMessage(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .data(null)
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DuplicateDeliveryException.class)
+    public ResponseEntity<ApiResponseDto<String>> DuplicateDeliveryException(DuplicateDeliveryException ex) {
         ApiResponseDto<String> response = ApiResponseDto.<String>builder()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .statusMessage(HttpStatus.BAD_REQUEST.getReasonPhrase())
