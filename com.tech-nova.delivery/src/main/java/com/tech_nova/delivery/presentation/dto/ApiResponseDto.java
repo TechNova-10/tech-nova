@@ -18,6 +18,14 @@ public class ApiResponseDto<T> {
     private String message;
     private T data;
 
+    public static <T> ApiResponseDto<T> success(String message) {
+        return ApiResponseDto.<T>builder()
+                .statusCode(HttpStatus.OK.value())
+                .statusMessage(HttpStatus.OK.getReasonPhrase())
+                .message(message)
+                .build();
+    }
+
     public static <T> ApiResponseDto<T> success(String message, T data) {
         return ApiResponseDto.<T>builder()
                 .statusCode(HttpStatus.OK.value())
