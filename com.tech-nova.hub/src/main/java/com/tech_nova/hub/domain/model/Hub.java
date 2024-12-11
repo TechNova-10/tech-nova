@@ -38,14 +38,17 @@ public class Hub {
   @Column(name = "name", nullable = false)
   private String name;
 
-  @Column(name = "address_code", nullable = false)
-  private String addressCode;
+  @Column(name = "province", nullable = false)
+  private String province;
 
-  @Column(name = "road_address", nullable = false)
-  private String roadAddress;
+  @Column(name = "city", nullable = false)
+  private String city;
 
-  @Column(name = "detailed_address")
-  private String detailedAddress;
+  @Column(name = "district", nullable = false)
+  private String district;
+
+  @Column(name = "roadName", nullable = false)
+  private String roadName;
 
   @Column(name = "latitude", nullable = false)
   @Min(-90)
@@ -58,7 +61,7 @@ public class Hub {
   private double longitude;
 
   @Column(name = "is_deleted", nullable = false)
-  private boolean isDeleted = false;
+  private Boolean isDeleted = false;
 
   @Column(name = "created_at", updatable = false)
   @CreationTimestamp
@@ -84,9 +87,10 @@ public class Hub {
     return Hub.builder()
         .hubManagerId(userId)
         .name(hubRequestDto.getName())
-        .addressCode(hubRequestDto.getAddressCode())
-        .roadAddress(hubRequestDto.getRoadAddress())
-        .detailedAddress(hubRequestDto.getDetailedAddress())
+        .province(hubRequestDto.getProvince())
+        .city(hubRequestDto.getCity())
+        .district(hubRequestDto.getDistrict())
+        .roadName(hubRequestDto.getRoadName())
         .latitude(hubRequestDto.getLatitude())
         .longitude(hubRequestDto.getLongitude())
         .createdBy(userId)
@@ -96,9 +100,10 @@ public class Hub {
 
   public void updateHub(HubRequestDto hubRequestDto, UUID userId) {
     this.name = hubRequestDto.getName();
-    this.addressCode = hubRequestDto.getAddressCode();
-    this.roadAddress = hubRequestDto.getRoadAddress();
-    this.detailedAddress = hubRequestDto.getDetailedAddress();
+    this.province = hubRequestDto.getProvince();
+    this.city = hubRequestDto.getCity();
+    this.district = hubRequestDto.getDistrict();
+    this.roadName = hubRequestDto.getRoadName();
     this.latitude = hubRequestDto.getLatitude();
     this.longitude = hubRequestDto.getLongitude();
     this.updatedBy = userId;

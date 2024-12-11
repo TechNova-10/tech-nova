@@ -9,11 +9,13 @@ public class HubRequestDto {
 
   private String name;
 
-  private String addressCode;
+  private String province;
 
-  private String roadAddress;
+  private String city;
 
-  private String detailedAddress;
+  private String district;
+
+  private String roadName;
 
   @Min(-90)
   @Max(90)

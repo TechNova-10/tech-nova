@@ -16,11 +16,13 @@ public class HubResponseDto {
 
   private String name;
 
-  private String addressCode;
+  private String province;
 
-  private String roadAddress;
+  private String city;
 
-  private String detailedAddress;
+  private String district;
+
+  private String roadName;
 
   private double latitude;
 
@@ -41,12 +43,13 @@ public class HubResponseDto {
         .hubId(hub.getHubId())
         .hubManagerId(hub.getHubManagerId())
         .name(hub.getName())
-        .addressCode(hub.getAddressCode())
-        .roadAddress(hub.getRoadAddress())
-        .detailedAddress(hub.getDetailedAddress())
+        .province(hub.getProvince())
+        .city(hub.getCity())
+        .district(hub.getDistrict())
+        .roadName(hub.getRoadName())
         .latitude(hub.getLatitude())
         .longitude(hub.getLongitude())
-        .isDeleted(hub.isDeleted())
+        .isDeleted(hub.getIsDeleted())
         .createdAt(hub.getCreatedAt())
         .createdBy(hub.getCreatedBy())
         .updatedAt(hub.getUpdatedAt())
