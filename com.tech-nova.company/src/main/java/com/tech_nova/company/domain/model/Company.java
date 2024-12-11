@@ -18,8 +18,11 @@ public class Company extends AuditField {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID companyId; // 업체 ID
 
-    @Column(nullable = true)
+    @Column(nullable = false)
     private UUID hubId; // 허브 ID
+
+    @Column(nullable = false)
+    private UUID hubManagerId; // 허브 관리자 ID
 
     @Column(nullable = false)
     private String name; // 업체명
