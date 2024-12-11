@@ -33,16 +33,19 @@ public class Delivery extends Timestamped {
     @Column(nullable = false)
     private DeliveryStatus currentStatus;
 
-    @Column(name = "province", nullable = false)
+    @Column(nullable = false)
+    private UUID recipientCompanyId;
+
+    @Column(nullable = false)
     private String province;
 
-    @Column(name = "city", nullable = false)
+    @Column(nullable = false)
     private String city;
 
-    @Column(name = "district", nullable = false)
+    @Column(nullable = false)
     private String district;
 
-    @Column(name = "roadName", nullable = false)
+    @Column(nullable = false)
     private String roadName;
 
     @Column
@@ -106,8 +109,21 @@ public class Delivery extends Timestamped {
         this.currentStatus = currentStatus;
     }
 
+    public void updateRouteRecordState(UUID deliveryRouteId, DeliveryHubStatus currentStatus) {
+        DeliveryRouteRecord routeRecord = routeRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.updateCurrentStatus(currentStatus);
+    }
+
     public void addRouteRecord(DeliveryRouteRecord routeRecord) {
         this.routeRecords.add(routeRecord);
+    }
+
+    public void addCompanyRouteRecord(DeliveryCompanyRouteRecord companyRouteRecord) {
+        this.companyRouteRecords.add(companyRouteRecord);
     }
 
     public void markAsDeleted(UUID deletedBy) {

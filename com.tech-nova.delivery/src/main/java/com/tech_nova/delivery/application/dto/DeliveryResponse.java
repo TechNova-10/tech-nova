@@ -17,6 +17,7 @@ public class DeliveryResponse {
     private UUID orderId;
     private UUID departureHubId;
     private UUID arrivalHubId;
+    private UUID recipientCompanyId;
     private DeliveryStatus currentStatus;
     private String province;
     private String city;
@@ -32,6 +33,7 @@ public class DeliveryResponse {
                 .orderId(delivery.getOrderId())
                 .departureHubId(delivery.getDepartureHubId())
                 .arrivalHubId(delivery.getArrivalHubId())
+                .recipientCompanyId(delivery.getRecipientCompanyId())
                 .currentStatus(delivery.getCurrentStatus())
                 .province(delivery.getProvince())
                 .city(delivery.getCity())

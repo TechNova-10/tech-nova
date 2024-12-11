@@ -10,6 +10,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class DeliveryRequest {
     private UUID orderId;
+    private UUID recipientCompanyId;
     private String province;
     private String city;
     private String district;
@@ -18,6 +19,7 @@ public class DeliveryRequest {
     public DeliveryDto toDTO() {
         return DeliveryDto.create(
                 this.orderId,
+                this.recipientCompanyId,
                 this.province,
                 this.city,
                 this.district,
