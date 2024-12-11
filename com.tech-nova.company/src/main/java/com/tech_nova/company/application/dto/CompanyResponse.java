@@ -17,6 +17,7 @@ public class CompanyResponse {
     private String name; // 업체명
     private String type; // 업체 타입
 //    private UUID hubId; // 허브 ID
+//    private UUID hubManagerId; // 허브  관리자 ID
     private String province;
     private String city;
     private String district;
@@ -27,6 +28,7 @@ public class CompanyResponse {
         this.name = company.getName();
         this.type = company.getType().name();
 //        this.hubId = company.getHubId();
+//        this.hubManagerId = company.getHubManagerId();
         this.province = company.getProvince();
         this.city = company.getCity();
         this.district= company.getDistrict();

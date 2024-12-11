@@ -23,8 +23,11 @@ public class CompanyController {
 
     // 업체 생성
     @PostMapping
-    public ResponseEntity<CompanyResponse> createCompany(@RequestBody CompanyRequest requestDto) {
-        CompanyResponse response = companyService.createCompany(requestDto);
+    public ResponseEntity<CompanyResponse> createCompany(
+            @RequestBody CompanyRequest requestDto,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        CompanyResponse response = companyService.createCompany(requestDto, token);
         return ResponseEntity.ok(response); // 200 OK와 함께 생성된 업체 반환
     }
 
@@ -32,21 +35,27 @@ public class CompanyController {
     @PutMapping("/{companyId}")
     public ResponseEntity<CompanyResponse> updateCompany(
             @PathVariable UUID companyId,
-            @RequestBody CompanyRequest requestDto) {
-        CompanyResponse response = companyService.updateCompany(companyId, requestDto);
+            @RequestBody CompanyRequest requestDto,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        CompanyResponse response = companyService.updateCompany(companyId, requestDto, token);
         return ResponseEntity.ok(response); // 200 OK와 함께 수정된 업체 반환
     }
 
     // 업체 삭제 (논리적 삭제)
     @DeleteMapping("/{companyId}")
-    public ResponseEntity<Void> deleteCompany(@PathVariable UUID companyId) {
-        companyService.deleteCompany(companyId);
+    public ResponseEntity<Void> deleteCompany(
+            @PathVariable UUID companyId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        companyService.deleteCompany(companyId, token);
         return ResponseEntity.noContent().build(); // 204 No Content 반환
     }
 
     // 허브 ID로 업체 조회
     @GetMapping("/hub/{hubId}")
-    public ResponseEntity<List<CompanyResponse>> getCompaniesByHubId(@PathVariable UUID hubId) {
+    public ResponseEntity<List<CompanyResponse>> getCompaniesByHubId(
+            @PathVariable UUID hubId) {
         List<CompanyResponse> responseList = companyService.getCompaniesByHubId(hubId);
         return ResponseEntity.ok(responseList); // 200 OK와 함께 결과 반환
     }
@@ -61,5 +70,13 @@ public class CompanyController {
     ) {
         Page<CompanyResponse> responsePage = companyService.searchCompanies(name, type, city, pageable);
         return ResponseEntity.ok(responsePage); // 200 OK와 함께 결과 반환
+    }
+
+    // Authorization 헤더에서 토큰 추출
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        throw new IllegalArgumentException("Invalid Authorization header");
     }
 }

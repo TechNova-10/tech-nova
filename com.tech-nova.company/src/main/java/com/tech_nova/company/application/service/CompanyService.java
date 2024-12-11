@@ -1,6 +1,8 @@
 package com.tech_nova.company.application.service;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.tech_nova.company.application.client.AuthServiceClient;
+import com.tech_nova.company.application.client.HubServiceClient;
 import com.tech_nova.company.application.dto.CompanyRequest;
 import com.tech_nova.company.application.dto.CompanyResponse;
 import com.tech_nova.company.domain.model.Company;
@@ -22,13 +24,21 @@ import java.util.stream.Collectors;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final HubServiceClient hubServiceClient;
+    private final AuthServiceClient authServiceClient;
 
     @Transactional
-    public CompanyResponse createCompany(CompanyRequest requestDto) {
+    public CompanyResponse createCompany(CompanyRequest requestDto, String token) {
+
+        validateHubId(requestDto.getHubId());
+
+        validateHubManager(token, requestDto.getHubId());
+
         Company company = Company.builder()
+                .hubId(requestDto.getHubId())
+                .hubManagerId(requestDto.getHubManagerId())
                 .name(requestDto.getName())
                 .type(requestDto.getType())
-                .hubId(requestDto.getHubId())
                 .province(requestDto.getProvince())
                 .city(requestDto.getCity())
                 .district(requestDto.getDistrict())
@@ -41,13 +51,19 @@ public class CompanyService {
     }
 
     @Transactional
-    public CompanyResponse updateCompany(UUID companyId, CompanyRequest requestDto) {
+    public CompanyResponse updateCompany(UUID companyId, CompanyRequest requestDto, String token) {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found with ID: " + companyId));
+
+
+        validateHubId(requestDto.getHubId());
+
+        validateHubManager(token, requestDto.getHubId());
 
         company.setName(requestDto.getName());
         company.setType(requestDto.getType());
         company.setHubId(requestDto.getHubId());
+        company.setHubManagerId(requestDto.getHubManagerId());
         company.setProvince(requestDto.getProvince());
         company.setCity(requestDto.getCity());
         company.setDistrict(requestDto.getDistrict());
@@ -57,9 +73,11 @@ public class CompanyService {
     }
 
     @Transactional
-    public void deleteCompany(UUID companyId) {
+    public void deleteCompany(UUID companyId, String token) {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found with ID: " + companyId));
+
+        validateHubManager(token, company.getHubId());
 
         company.softDelete();
         companyRepository.save(company);
@@ -107,4 +125,24 @@ public class CompanyService {
 
         return filter;
     }
+
+    private void validateHubId(UUID hubId) {
+        boolean isValid = hubServiceClient.isHubIdValid(hubId.toString());
+        if (!isValid) {
+            throw new IllegalArgumentException("Invalid hubId: " + hubId);
+        }
+    }
+
+    private void validateHubManager(String token, UUID hubId) {
+        String userRole = authServiceClient.getUserRole(token);
+        if ("MASTER".equals(userRole)) {
+            return;
+        }
+
+        String userHubId = authServiceClient.getUserHubId(token);
+        if (!hubId.toString().equals(userHubId)) {
+            throw new IllegalArgumentException("You do not have permission to manage this hub's companies.");
+        }
+    }
+
 }
