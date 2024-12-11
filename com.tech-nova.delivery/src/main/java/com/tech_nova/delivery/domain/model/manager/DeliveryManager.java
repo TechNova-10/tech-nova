@@ -18,7 +18,7 @@ public class DeliveryManager extends Timestamped {
     @Column(name = "delivery_manager_id")
     private UUID id;
 
-    @Column(nullable = false)
+    @Column
     private UUID assignedHubId;
 
     @Column(nullable = false)
