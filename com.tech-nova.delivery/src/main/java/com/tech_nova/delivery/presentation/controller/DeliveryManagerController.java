@@ -18,7 +18,7 @@ public class DeliveryManagerController {
     private final DeliveryManagerService deliveryManagerService;
 
     @PostMapping
-    public ApiResponseDto<UUID> createUser(@RequestBody DeliveryManagerRequest request) {
+    public ApiResponseDto<UUID> createDeliveryManager(@RequestBody DeliveryManagerRequest request) {
         UUID deliveryManagerId = deliveryManagerService.createDeliveryManager(request.toDTO());
         return ApiResponseDto.success("Delivery Manager created successfully", deliveryManagerId);
     }
