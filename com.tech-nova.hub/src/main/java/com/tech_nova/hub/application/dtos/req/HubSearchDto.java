@@ -1,9 +1,11 @@
 package com.tech_nova.hub.application.dtos.req;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import org.springframework.data.domain.Pageable;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class HubSearchDto {
 
   private String name;
@@ -16,15 +18,6 @@ public class HubSearchDto {
 
   private String roadName;
 
-  private double latitudeStart;
-
-  private double latitudeEnd;
-
-  private double longitudeStart;
-
-  private double longitudeEnd;
-
-  private String sortBy;
-
-  private Pageable pageable;
+  @JsonProperty("deleted")
+  private boolean isDeleted;
 }

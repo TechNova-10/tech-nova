@@ -1,23 +1,30 @@
 package com.tech_nova.hub.infrastructure.repository;
 
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.tech_nova.hub.application.dtos.req.HubSearchDto;
-import com.tech_nova.hub.application.dtos.res.HubResponseDto;
-import com.tech_nova.hub.domain.model.QHub;
+import com.tech_nova.hub.domain.model.Hub;
+import com.tech_nova.hub.domain.repository.HubRepository;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
-public class HubRepositoryImpl implements HubRepositoryCustom{
+public class HubRepositoryImpl implements HubRepository {
 
-  private final JPAQueryFactory queryFactory;
-  private final QHub hub = QHub.hub;
+  private final HubJpaRepository hubJpaRepository;
 
   @Override
-  public Page<HubResponseDto> searchHubs(String role, HubSearchDto hubSearchDto, Pageable pageable) {
+  public void save(Hub hub) {
+    hubJpaRepository.save(hub);
+  }
 
-    return null;
+  @Override
+  public Optional<Hub> findById(UUID hubId) {
+    return hubJpaRepository.findById(hubId);
+  }
+
+  @Override
+  public Optional<Hub> findByHubIdAndIsDeletedFalse(UUID hubId) {
+    return hubJpaRepository.findByHubIdAndIsDeletedFalse(hubId);
   }
 }

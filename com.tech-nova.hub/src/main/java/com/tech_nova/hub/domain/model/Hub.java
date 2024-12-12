@@ -61,7 +61,7 @@ public class Hub {
   private double longitude;
 
   @Column(name = "is_deleted", nullable = false)
-  private Boolean isDeleted = false;
+  private boolean isDeleted = false;
 
   @Column(name = "created_at", updatable = false)
   @CreationTimestamp
@@ -80,7 +80,7 @@ public class Hub {
   @Column(name = "deleted_at")
   private LocalDateTime deleted_at;
 
-  @Column(name = "deleted_By", nullable = false)
+  @Column(name = "deleted_By")
   private UUID deleted_By;
 
   public static Hub createHub(HubRequestDto hubRequestDto, UUID userId) {
@@ -93,6 +93,7 @@ public class Hub {
         .roadName(hubRequestDto.getRoadName())
         .latitude(hubRequestDto.getLatitude())
         .longitude(hubRequestDto.getLongitude())
+        .isDeleted(false)
         .createdBy(userId)
         .updatedBy(userId)
         .build();
