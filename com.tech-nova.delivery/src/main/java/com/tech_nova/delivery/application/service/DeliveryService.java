@@ -1,8 +1,8 @@
 package com.tech_nova.delivery.application.service;
 
 import com.tech_nova.delivery.application.dto.DeliveryDto;
-import com.tech_nova.delivery.application.dto.DeliveryResponse;
 import com.tech_nova.delivery.application.dto.HubMovementData;
+import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
