@@ -1,9 +1,9 @@
 server:
-  port: 19093
+  port: 19094
 
 spring:
   application:
-    name: product-service
+    name: delivery-service
   profiles:
     default: dev
   data:
