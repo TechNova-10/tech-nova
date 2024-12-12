@@ -109,6 +109,10 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
         this.deliveryManager = deliveryManager;
     }
 
+    public void markAsUpdated(UUID updatedBy) {
+        super.markAsUpdated(updatedBy);
+    }
+
     public void markAsDeleted(UUID deletedBy) {
         super.markAsDeleted(deletedBy);
         this.isDeleted = true;

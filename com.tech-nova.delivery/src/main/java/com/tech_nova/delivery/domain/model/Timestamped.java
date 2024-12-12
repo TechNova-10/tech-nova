@@ -6,7 +6,6 @@ import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -29,7 +28,6 @@ public abstract class Timestamped {
     @Column
     private LocalDateTime updateAt;
 
-    @LastModifiedBy
     @Column
     private UUID updateBy;
 
@@ -38,6 +36,10 @@ public abstract class Timestamped {
 
     @Column
     private UUID deletedBy;
+
+    public void markAsUpdated(UUID updatedBy) {
+        this.updateBy = updatedBy;
+    }
 
     public void markAsDeleted(UUID deletedBy) {
         this.deletedAt = LocalDateTime.now();

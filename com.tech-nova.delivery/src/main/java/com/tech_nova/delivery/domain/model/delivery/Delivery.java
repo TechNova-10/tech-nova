@@ -119,22 +119,25 @@ public class Delivery extends Timestamped {
             DeliveryManager deliveryManager,
             DeliveryHubStatus currentStatus,
             Double realDistance,
-            String realTime) {
+            String realTime,
+            UUID updatedBy) {
         DeliveryRouteRecord routeRecord = routeRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         routeRecord.update(deliveryManager, currentStatus, realDistance, realTime);
+        routeRecord.markAsUpdated(updatedBy);
     }
 
-    public void updateRouteRecordState(UUID deliveryRouteId, DeliveryHubStatus currentStatus) {
+    public void updateRouteRecordState(UUID deliveryRouteId, DeliveryHubStatus currentStatus, UUID updatedBy) {
         DeliveryRouteRecord routeRecord = routeRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         routeRecord.updateCurrentStatus(currentStatus);
+        routeRecord.markAsUpdated(updatedBy);
         this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
     }
 
@@ -144,35 +147,47 @@ public class Delivery extends Timestamped {
             DeliveryCompanyStatus currentStatus,
             Integer deliveryOrderSequence,
             Double realDistance,
-            String realTime) {
+            String realTime,
+            UUID updatedBy) {
         DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         routeRecord.update(deliveryManager, currentStatus, deliveryOrderSequence, realDistance, realTime);
+        routeRecord.markAsUpdated(updatedBy);
     }
 
-    public void updateCompanyRouteRecordState(UUID deliveryRouteId, DeliveryCompanyStatus currentStatus) {
+    public void updateCompanyRouteRecordState(UUID deliveryRouteId, DeliveryCompanyStatus currentStatus, UUID updatedBy) {
         DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         routeRecord.updateCurrentStatus(currentStatus);
+        routeRecord.markAsUpdated(updatedBy);
         this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
     }
 
-    public void deleteCompanyRouteRecordState(UUID deliveryRouteId) {
+    public void deleteRouteRecordState(UUID deliveryRouteId, UUID deletedBy) {
+        DeliveryRouteRecord routeRecord = routeRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        // 추후 인증 구현되면 사용자 Id로 변경
+        routeRecord.markAsDeleted(deletedBy);
+    }
+
+    public void deleteCompanyRouteRecordState(UUID deliveryRouteId, UUID deletedBy) {
         DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         // 추후 인증 구현되면 사용자 Id로 변경
-        routeRecord.markAsDeleted(UUID.randomUUID());
+        routeRecord.markAsDeleted(deletedBy);
     }
-
 
     public void addRouteRecord(DeliveryRouteRecord routeRecord) {
         this.routeRecords.add(routeRecord);
@@ -185,5 +200,9 @@ public class Delivery extends Timestamped {
     public void markAsDeleted(UUID deletedBy) {
         super.markAsDeleted(deletedBy);
         this.isDeleted = true;
+    }
+
+    public void markAsUpdated(UUID updatedBy) {
+        super.markAsUpdated(updatedBy);
     }
 }
