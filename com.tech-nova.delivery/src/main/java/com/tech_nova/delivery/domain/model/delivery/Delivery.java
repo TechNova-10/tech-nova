@@ -120,7 +120,29 @@ public class Delivery extends Timestamped {
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         routeRecord.updateCurrentStatus(currentStatus);
+        this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
     }
+
+    public void updateCompanyRouteRecordState(UUID deliveryRouteId, DeliveryCompanyStatus currentStatus) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.updateCurrentStatus(currentStatus);
+        this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
+    }
+
+    public void deleteCompanyRouteRecordState(UUID deliveryRouteId) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        // 추후 인증 구현되면 사용자 Id로 변경
+        routeRecord.markAsDeleted(UUID.randomUUID());
+    }
+
 
     public void addRouteRecord(DeliveryRouteRecord routeRecord) {
         this.routeRecords.add(routeRecord);
