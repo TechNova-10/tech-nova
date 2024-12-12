@@ -23,6 +23,9 @@ public class Product extends AuditField {
     private UUID companyId;
 
     @Column(nullable = false)
+    private UUID hubId;
+
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false, columnDefinition = "TEXT")
