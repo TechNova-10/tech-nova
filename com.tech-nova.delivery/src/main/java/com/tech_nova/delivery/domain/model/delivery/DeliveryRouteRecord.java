@@ -77,21 +77,23 @@ public class DeliveryRouteRecord extends Timestamped {
 
     public void update(
             DeliveryManager deliveryManager,
-            UUID departureHubId,
-            UUID arrivalHubId,
             DeliveryHubStatus currentStatus,
-            Double expectedDistance,
-            String expectedTime,
             Double realDistance,
             String realTime) {
-        this.deliveryManager = deliveryManager;
-        this.departureHubId = departureHubId;
-        this.arrivalHubId = arrivalHubId;
-        this.currentStatus = currentStatus;
-        this.expectedDistance = expectedDistance;
-        this.expectedTime = expectedTime;
-        this.realDistance = realDistance;
-        this.realTime = realTime;
+
+        if (deliveryManager != null) {
+            this.deliveryManager = deliveryManager;
+        }
+        if (currentStatus != null) {
+            this.currentStatus = currentStatus;
+        }
+
+        if (realDistance != null) {
+            this.realDistance = realDistance;
+        }
+        if (realTime != null) {
+            this.realTime = realTime;
+        }
     }
 
     public void connectDelivery(Delivery delivery) {

@@ -114,6 +114,20 @@ public class Delivery extends Timestamped {
         this.currentStatus = currentStatus;
     }
 
+    public void updateRouteRecord(
+            UUID deliveryRouteId,
+            DeliveryManager deliveryManager,
+            DeliveryHubStatus currentStatus,
+            Double realDistance,
+            String realTime) {
+        DeliveryRouteRecord routeRecord = routeRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.update(deliveryManager, currentStatus, realDistance, realTime);
+    }
+
     public void updateRouteRecordState(UUID deliveryRouteId, DeliveryHubStatus currentStatus) {
         DeliveryRouteRecord routeRecord = routeRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
