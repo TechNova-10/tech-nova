@@ -1,6 +1,7 @@
 package com.tech_nova.delivery.domain.model.delivery;
 
 import com.tech_nova.delivery.domain.model.Timestamped;
+import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -121,6 +122,21 @@ public class Delivery extends Timestamped {
 
         routeRecord.updateCurrentStatus(currentStatus);
         this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
+    }
+
+    public void updateCompanyRouteRecord(
+            UUID deliveryRouteId,
+            DeliveryManager deliveryManager,
+            DeliveryCompanyStatus currentStatus,
+            Integer deliveryOrderSequence,
+            Double realDistance,
+            String realTime) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.update(deliveryManager, currentStatus, deliveryOrderSequence, realDistance, realTime);
     }
 
     public void updateCompanyRouteRecordState(UUID deliveryRouteId, DeliveryCompanyStatus currentStatus) {
