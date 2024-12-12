@@ -63,9 +63,7 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
             DeliveryCompanyStatus currentStatus,
             Integer deliveryOrderSequence,
             Double expectedDistance,
-            String expectedTime,
-            Double realDistance,
-            String realTime
+            String expectedTime
     ) {
         return DeliveryCompanyRouteRecord.builder()
                 .delivery(delivery)
@@ -76,8 +74,6 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
                 .deliveryOrderSequence(deliveryOrderSequence)
                 .expectedDistance(expectedDistance)
                 .expectedTime(expectedTime)
-                .realDistance(realDistance)
-                .realTime(realTime)
                 .build();
     }
 
