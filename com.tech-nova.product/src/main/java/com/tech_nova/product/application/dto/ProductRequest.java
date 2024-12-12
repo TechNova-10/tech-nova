@@ -10,6 +10,7 @@ import java.util.UUID;
 @Builder
 public class ProductRequest {
     private UUID companyId;
+    private UUID hubId;
     private String name;
     private String description;
     private Double price;
