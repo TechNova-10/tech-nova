@@ -1,9 +1,6 @@
 package com.tech_nova.delivery.application.service;
 
-import com.tech_nova.delivery.application.dto.DeliveryCompanyRouteRecordUpdateDto;
-import com.tech_nova.delivery.application.dto.DeliveryDto;
-import com.tech_nova.delivery.application.dto.DeliveryRouteRecordUpdateDto;
-import com.tech_nova.delivery.application.dto.HubMovementData;
+import com.tech_nova.delivery.application.dto.*;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -36,7 +33,7 @@ public class DeliveryService {
 
     @Transactional
     public void createDelivery(DeliveryDto request) {
-        if (deliveryRepository.existsByOrderId(request.getOrderId())) {
+        if (deliveryRepository.existsByOrderIdAndIsDeletedFalse(request.getOrderId())) {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
 
@@ -53,6 +50,7 @@ public class DeliveryService {
                 request.getCity(),
                 request.getDistrict(),
                 request.getRoadName(),
+                request.getDetailAddress(),
                 new ArrayList<>()
         );
 
@@ -81,6 +79,73 @@ public class DeliveryService {
         }
 
         deliveryRepository.save(delivery);
+    }
+
+    @Transactional
+    public void updateDeliveryAddress(UUID deliveryId, DeliveryAddressUpdateDto request) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (delivery.isDeleted()) {
+            throw new IllegalStateException("삭제된 배송은 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.HUB_MOVING) {
+            throw new IllegalStateException("이동 중인 배송은 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.DELIVERY_COMPLETED) {
+            throw new IllegalStateException("완료된 배송은 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.COMPANY_MOVING) {
+            throw new IllegalStateException("이미 배송지로 출발해 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.COMPANY_WAITING) {
+            throw new IllegalStateException("허브에 도착해 배송 준비 중이므로 수정할 수 없습니다.");
+        }
+
+        List<DeliveryRouteRecord> routeRecords = deliveryRouteRecordRepository.findByDeliveryIdAndIsDeletedFalse(delivery.getId());
+        for (DeliveryRouteRecord record : routeRecords) {
+            if (record.getCurrentStatus() != DeliveryHubStatus.HUB_WAITING) {
+                throw new IllegalStateException("이미 배송이 시작되어 수정할 수 없습니다.");
+            }
+        }
+
+        UUID deletedBy = getUserIdFromToken("");
+        delivery.markAsDeleted(deletedBy);
+
+        DeliveryDto dto = DeliveryDto.create(
+                delivery.getOrderId(),
+                request.getRecipientCompanyId(),
+                request.getProvince(),
+                request.getCity(),
+                request.getDistrict(),
+                request.getRoadName(),
+                request.getDetailAddress()
+        );
+
+        createDelivery(dto);
+    }
+
+    @Transactional
+    public void updateRecipient(UUID deliveryId, String recipient) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (delivery.isDeleted()) {
+            throw new IllegalArgumentException("삭제된 배송에는 수령인을 입력할 수 없습니다.");
+        }
+
+        DeliveryCompanyRouteRecord companyRouteRecord =
+                deliveryCompanyRouteRecordRepository.findByDeliveryIdAndIsDeletedFalse(delivery.getId());
+        if (companyRouteRecord.getCurrentStatus() != DeliveryCompanyStatus.DELIVERY_COMPLETED) {
+            throw new IllegalArgumentException("배송이 완료되지 않으면 수령인을 입력할 수 없습니다.");
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateRecipient(recipient, updatedBy);
     }
 
     @Transactional
@@ -327,4 +392,5 @@ public class DeliveryService {
         // 추후 인증 완성 시 토큰 내 정보로 ID 가져올 예정
         return UUID.randomUUID();
     }
+
 }
