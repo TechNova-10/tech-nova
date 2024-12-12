@@ -22,6 +22,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponseDto<String>> handleIllegalStateException(IllegalStateException ex) {
+        ApiResponseDto<String> response = ApiResponseDto.<String>builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())  // You can change to HttpStatus.CONFLICT for business conflicts
+                .statusMessage(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .data(null)
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);  // Or HttpStatus.CONFLICT
+    }
+
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ApiResponseDto<String>> nullPointerExceptionHandler(NullPointerException ex) {
         ApiResponseDto<String> response = ApiResponseDto.<String>builder()
