@@ -1,5 +1,5 @@
 server:
-  port: # company 서비스 포트 번호
+  port: 19095 # company 서비스 포트 번호
 
 spring:
   application:
@@ -9,6 +9,7 @@ spring:
     url: jdbc:postgresql://localhost:5432/company_db
     username: postgres
     password: database123
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
