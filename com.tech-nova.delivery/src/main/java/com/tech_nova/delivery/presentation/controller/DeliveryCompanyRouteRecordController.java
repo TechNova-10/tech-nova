@@ -4,10 +4,7 @@ import com.tech_nova.delivery.application.service.DeliveryService;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -21,6 +18,18 @@ public class DeliveryCompanyRouteRecordController {
     @PostMapping
     public ResponseEntity<ApiResponseDto<Void>> createCompanyRouteRecord(@RequestParam("delivery_id") UUID deliveryId) {
         deliveryService.createCompanyRouteRecordByDeliveryId(deliveryId);
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully"));
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status created successfully"));
+    }
+
+    @PatchMapping("/{delivery_route_id}/status")
+    public ResponseEntity<ApiResponseDto<UUID>> updateCompanyDeliveryRouteStatus(@PathVariable("delivery_route_id") UUID deliveryRouteId, @RequestParam("current_status") String currentStatus) {
+        UUID routeRecordId = deliveryService.updateCompanyRouteRecordState(deliveryRouteId, currentStatus);
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", routeRecordId));
+    }
+
+    @DeleteMapping("/{delivery_route_id}")
+    public ResponseEntity<ApiResponseDto<Void>> deleteCompanyDeliveryRoute(@PathVariable("delivery_route_id") UUID deliveryRouteId) {
+        deliveryService.deleteCompanyRouteRecord(deliveryRouteId);
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status deleted successfully"));
     }
 }
