@@ -67,6 +67,7 @@ public class Delivery extends Timestamped {
             UUID departureHubId,
             UUID arrivalHubId,
             DeliveryStatus currentStatus,
+            UUID recipientCompanyId,
             String province,
             String city,
             String district,
@@ -78,6 +79,7 @@ public class Delivery extends Timestamped {
                 .departureHubId(departureHubId)
                 .arrivalHubId(arrivalHubId)
                 .currentStatus(currentStatus)
+                .recipientCompanyId(recipientCompanyId)
                 .province(province)
                 .city(city)
                 .district(district)
@@ -90,6 +92,7 @@ public class Delivery extends Timestamped {
             UUID departureHubId,
             UUID arrivalHubId,
             DeliveryStatus currentStatus,
+            UUID recipientCompanyId,
             String province,
             String city,
             String district,
@@ -98,6 +101,7 @@ public class Delivery extends Timestamped {
         this.departureHubId = departureHubId;
         this.arrivalHubId = arrivalHubId;
         this.currentStatus = currentStatus;
+        this.recipientCompanyId = recipientCompanyId;
         this.province = province;
         this.city = city;
         this.district = district;
