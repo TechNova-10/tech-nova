@@ -1,5 +1,6 @@
 package com.tech_nova.delivery.application.service;
 
+import com.tech_nova.delivery.application.dto.DeliveryCompanyRouteRecordUpdateDto;
 import com.tech_nova.delivery.application.dto.DeliveryDto;
 import com.tech_nova.delivery.application.dto.HubMovementData;
 import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
@@ -114,6 +115,29 @@ public class DeliveryService {
         }
 
         delivery.updateRouteRecordState(deliveryRouteId, newStatus);
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
+    public UUID updateCompanyRouteRecord(UUID deliveryRouteId, DeliveryCompanyRouteRecordUpdateDto request) {
+        DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        DeliveryManager deliveryManager = null;
+        if (request.getDeliveryManagerId() != null) {
+            deliveryManager = deliveryManagerRepository.findById(request.getDeliveryManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
+        }
+
+        DeliveryCompanyStatus newStatus = null;
+        if (request.getCurrentStatus() != null) {
+            newStatus = DeliveryCompanyStatus.valueOf(request.getCurrentStatus());
+        }
+
+        delivery.updateCompanyRouteRecord(deliveryRouteId, deliveryManager, newStatus, request.getDeliveryOrderSequence(), request.getRealDistance(), request.getRealTime());
 
         return routeRecord.getId();
     }
