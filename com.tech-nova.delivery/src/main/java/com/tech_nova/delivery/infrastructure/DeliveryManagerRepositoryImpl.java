@@ -13,7 +13,7 @@ public interface DeliveryManagerRepositoryImpl extends JpaRepository<DeliveryMan
     @Query("SELECT COALESCE(MAX(dm.deliveryOrderSequence), 0) FROM DeliveryManager dm WHERE dm.assignedHubId = :assignedHubId")
     Integer findMaxDeliveryOrderByHubId(UUID assignedHubId);
 
-    @Query("SELECT dm FROM DeliveryManager dm WHERE dm.managerRole = :role ORDER BY dm.deliveryOrderSequence ASC")
+    @Query("SELECT dm FROM DeliveryManager dm WHERE dm.managerRole = :role ORDER BY dm.deliveryOrderSequence ASC limit 1")
     Optional<DeliveryManager> findFirstByRole(DeliveryManagerRole role);
 
     @Query("SELECT COUNT(dm) FROM DeliveryManager dm WHERE dm.managerRole = :role AND dm.assignedHubId IS NULL AND dm.isDeleted = false")
