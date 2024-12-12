@@ -4,6 +4,7 @@ import com.tech_nova.delivery.application.service.DeliveryService;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.request.DeliveryRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,8 +20,8 @@ public class DeliveryController {
     private final DeliveryService deliveryService;
 
     @PostMapping
-    public ApiResponseDto<UUID> createDelivery(@RequestBody DeliveryRequest request) {
+    public ResponseEntity<ApiResponseDto<UUID>> createDelivery(@RequestBody DeliveryRequest request) {
         UUID deliveryId = deliveryService.createDelivery(request.toDTO());
-        return ApiResponseDto.success("Delivery created successfully", deliveryId);
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", deliveryId));
     }
 }
