@@ -4,6 +4,14 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/com.tech-nava.movement" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/com.tech-nava.movement" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/com.tech-nova.auth" />
         <option name="modules">
           <set>
@@ -24,6 +32,14 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$/com.tech-nova.hub" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/com.tech-nova.movement" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/com.tech-nova.movement" />
           </set>
         </option>
       </GradleProjectSettings>
