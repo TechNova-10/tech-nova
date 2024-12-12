@@ -50,6 +50,9 @@ public class Delivery extends Timestamped {
     private String roadName;
 
     @Column
+    private String detailAddress;
+
+    @Column
     private String recipient;
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
@@ -73,6 +76,7 @@ public class Delivery extends Timestamped {
             String city,
             String district,
             String roadName,
+            String detailAddress,
             List<DeliveryRouteRecord> routeRecords
     ) {
         return Delivery.builder()
@@ -85,33 +89,14 @@ public class Delivery extends Timestamped {
                 .city(city)
                 .district(district)
                 .roadName(roadName)
+                .detailAddress(detailAddress)
                 .routeRecords(routeRecords)
                 .build();
     }
 
-    public void update(
-            UUID departureHubId,
-            UUID arrivalHubId,
-            DeliveryStatus currentStatus,
-            UUID recipientCompanyId,
-            String province,
-            String city,
-            String district,
-            String roadName,
-            String recipient) {
-        this.departureHubId = departureHubId;
-        this.arrivalHubId = arrivalHubId;
-        this.currentStatus = currentStatus;
-        this.recipientCompanyId = recipientCompanyId;
-        this.province = province;
-        this.city = city;
-        this.district = district;
-        this.roadName = roadName;
+    public void updateRecipient(String recipient, UUID updatedBy) {
         this.recipient = recipient;
-    }
-
-    public void updateCurrentStatus(DeliveryStatus currentStatus) {
-        this.currentStatus = currentStatus;
+        markAsUpdated(updatedBy);
     }
 
     public void updateRouteRecord(
