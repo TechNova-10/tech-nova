@@ -4,7 +4,6 @@ import com.tech_nova.delivery.application.dto.DeliveryCompanyRouteRecordUpdateDt
 import com.tech_nova.delivery.application.dto.DeliveryDto;
 import com.tech_nova.delivery.application.dto.DeliveryRouteRecordUpdateDto;
 import com.tech_nova.delivery.application.dto.HubMovementData;
-import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -36,7 +35,7 @@ public class DeliveryService {
     private final DeliveryManagerAssignmentService deliveryManagerAssignmentService;
 
     @Transactional
-    public UUID createDelivery(DeliveryDto request) {
+    public void createDelivery(DeliveryDto request) {
         if (deliveryRepository.existsByOrderId(request.getOrderId())) {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
@@ -82,8 +81,14 @@ public class DeliveryService {
         }
 
         deliveryRepository.save(delivery);
+    }
 
-        return DeliveryResponse.of(delivery).getId();
+    @Transactional
+    public void deleteDelivery(UUID deliveryId) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+        UUID deletedBy = getUserIdFromToken("");
+        delivery.markAsDeleted(deletedBy);
     }
 
     @Transactional
