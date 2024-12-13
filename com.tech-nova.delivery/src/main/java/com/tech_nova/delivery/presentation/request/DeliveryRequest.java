@@ -15,6 +15,7 @@ public class DeliveryRequest {
     private String city;
     private String district;
     private String roadName;
+    private String detailAddress;
 
     public DeliveryDto toDTO() {
         return DeliveryDto.create(
@@ -23,8 +24,8 @@ public class DeliveryRequest {
                 this.province,
                 this.city,
                 this.district,
-                this.roadName
+                this.roadName,
+                this.detailAddress
         );
     }
-
 }

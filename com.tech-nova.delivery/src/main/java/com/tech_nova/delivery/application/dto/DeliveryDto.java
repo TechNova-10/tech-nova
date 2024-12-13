@@ -15,6 +15,7 @@ public class DeliveryDto {
     private String city;
     private String district;
     private String roadName;
+    private String detailAddress;
 
     public static DeliveryDto create(
             UUID orderId,
@@ -22,7 +23,8 @@ public class DeliveryDto {
             String province,
             String city,
             String district,
-            String roadName
+            String roadName,
+            String detailAddress
     ) {
         return DeliveryDto.builder()
                 .orderId(orderId)
@@ -31,6 +33,7 @@ public class DeliveryDto {
                 .city(city)
                 .district(district)
                 .roadName(roadName)
+                .detailAddress(detailAddress)
                 .build();
     }
 }
