@@ -20,11 +20,18 @@ spring:
   jpa:
     database: postgresql
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:19090/eureka/
+
+naver:
+  map:
+    geocoding-url: https://naveropenapi.apigw.ntruss.com/map-geocode/v2
+    directions-url: https://naveropenapi.apigw.ntruss.com/map-direction/v1
+    api-key-id: ${NAVER_API_KEY_ID}
+    api-key: ${NAVER_API_KEY}
 
 #management:
 #  zipkin:

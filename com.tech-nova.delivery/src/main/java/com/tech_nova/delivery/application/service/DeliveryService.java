@@ -12,6 +12,7 @@ import com.tech_nova.delivery.domain.service.DeliveryManagerAssignmentService;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {
+
+    private final MapService mapService;
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryManagerRepository deliveryManagerRepository;
@@ -281,6 +284,11 @@ public class DeliveryService {
 
         validateRoleForCompanyAssignment(deliveryManager);
 
+        String city = delivery.getCity();
+        String roadName = delivery.getRoadName();
+        String fullAddress = city + " " + roadName;
+        LocationData coordinates = fetchCoordinates(fullAddress);
+
         // 마지막 허브 -> 업체의 예상 거리, 시간 계산 필요
         DeliveryCompanyRouteRecord companyRouteRecord = DeliveryCompanyRouteRecord.create(
                 delivery,
@@ -288,7 +296,8 @@ public class DeliveryService {
                 delivery.getArrivalHubId(),
                 delivery.getRecipientCompanyId(),
                 DeliveryCompanyStatus.COMPANY_WAITING,
-                1,
+                coordinates.getLatitude(),
+                coordinates.getLongitude(),
                 (double) 0,
                 "1h"
         );
@@ -316,11 +325,10 @@ public class DeliveryService {
         delivery.deleteCompanyRouteRecordState(deliveryRouteId, deletedBy);
     }
 
-
     private List<HubMovementData> createHubMovementDataList() {
         UUID hubId1 = UUID.randomUUID();
         UUID hubId2 = UUID.randomUUID();
-        UUID hubId3 = UUID.randomUUID();
+        UUID hubId3 = UUID.fromString("e0ad3c6b-6240-45a2-9169-65b4e83b2ea6");
 
         // 임시 데이터
         List<HubMovementData> hubMovementDatas = new ArrayList<>();
@@ -386,6 +394,11 @@ public class DeliveryService {
                 throw new HubDeliveryCompletedException("현재 업체 배송이 완료되어 수정이 불가능합니다.");
             }
         }
+    }
+
+    @Cacheable(cacheNames = "coordinates_cache")
+    public LocationData fetchCoordinates(String address) {
+        return mapService.getCoordinates(address);
     }
 
     private UUID getUserIdFromToken(String token) {
