@@ -12,7 +12,9 @@ public interface DeliveryRepository {
     List<Delivery> findAll();
 
     Optional<Delivery> findById(UUID id);
-    
+
+    Optional<Delivery> findByIdAndIsDeletedFalse(UUID id);
+
     boolean existsByOrderIdAndIsDeletedFalse(UUID orderId);
 
     Delivery save(Delivery delivery);
