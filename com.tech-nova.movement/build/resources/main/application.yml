@@ -1,6 +1,6 @@
 spring:
   application:
-    name: hub-service
+    name: movement-service
   datasource:
     url: jdbc:postgresql://localhost:5432/hub
     username: ws
@@ -15,18 +15,9 @@ spring:
         format_sql: true
         highlight_sql: true
 server:
-  port: 19093
+  port: 19094
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:19090/eureka/
-
-#management:
-#  zipkin:
-#    tracing:
-#      endpoint: "http://localhost:9411/api/v2/spans"
-#  tracing:
-#    sampling:
-#      probability: 1.0
-
