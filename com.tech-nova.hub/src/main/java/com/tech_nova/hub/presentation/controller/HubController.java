@@ -2,10 +2,12 @@ package com.tech_nova.hub.presentation.controller;
 
 import com.tech_nova.hub.application.dtos.req.HubRequestDto;
 import com.tech_nova.hub.application.dtos.req.HubSearchDto;
+import com.tech_nova.hub.application.dtos.res.HubClientResponseDto;
 import com.tech_nova.hub.application.dtos.res.HubResponseDto;
 import com.tech_nova.hub.application.service.HubSearchService;
 import com.tech_nova.hub.application.service.HubService;
 import com.tech_nova.hub.presentation.dto.ApiResponseDto;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -77,6 +79,7 @@ public class HubController {
     );
   }
 
+
   @PutMapping("/{hubId}")
   public ResponseEntity<ApiResponseDto<Void>> updateHub(
       @PathVariable UUID hubId,
@@ -108,5 +111,10 @@ public class HubController {
             .build(),
         HttpStatus.OK
     );
+  }
+
+  @GetMapping("/client")
+  public List<HubClientResponseDto> getHubList() {
+    return hubService.getHubList();
   }
 }
