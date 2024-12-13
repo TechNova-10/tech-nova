@@ -13,28 +13,36 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("api/v1/products")
+@RequestMapping("/products")
 @RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
 
     @PostMapping
-    public ResponseEntity<Void> createProduct(@RequestBody ProductRequest request) {
-        productService.createProduct(request);
-        return ResponseEntity.status(201).build();
+    public ResponseEntity<ApiResponseDto<Void>> createProduct(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody ProductRequest request) {
+        String token = extractToken(authorizationHeader);
+        productService.createProduct(token, request);
+        return ResponseEntity.status(201).body(ApiResponseDto.success("상품 생성 완료", null));
     }
 
     @PutMapping("/{productId}")
     public ResponseEntity<ApiResponseDto<ProductResponse>> updateProduct(
+            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable UUID productId, @RequestBody ProductRequest request) {
-        ProductResponse response = productService.updateProduct(productId, request);
+        String token = extractToken(authorizationHeader);
+        ProductResponse response = productService.updateProduct(token, productId, request);
         return ResponseEntity.ok(ApiResponseDto.success("상품 수정 완료", response));
     }
 
     @DeleteMapping("/{productId}")
-    public ResponseEntity<ApiResponseDto<Void>> deleteProduct(@PathVariable UUID productId) {
-        productService.deleteProduct(productId);
+    public ResponseEntity<ApiResponseDto<Void>> deleteProduct(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable UUID productId) {
+        String token = extractToken(authorizationHeader);
+        productService.deleteProduct(token, productId);
         return ResponseEntity.ok(ApiResponseDto.successDelete());
     }
 
@@ -51,5 +59,12 @@ public class ProductController {
             Pageable pageable) {
         PagedModel<ProductResponse> products = productService.searchProducts(name, companyId, pageable);
         return ResponseEntity.ok(ApiResponseDto.success("상품 검색 완료", products));
+    }
+
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        throw new IllegalArgumentException("유효하지 않은 Authorization header");
     }
 }
