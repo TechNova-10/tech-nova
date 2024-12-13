@@ -25,30 +25,20 @@ public class GeocodingApiClient implements MapService {
         this.baseUrl = baseUrl;
         this.apiKeyId = apiKeyId;
         this.apiKey = apiKey;
-
-        // Log to verify values
-        System.out.println("BaseUrl: " + baseUrl);
-        System.out.println("API Key ID: " + apiKeyId);
-        System.out.println("API Key: " + apiKey);
     }
 
 
     @Override
     public LocationData getCoordinates(String address) {
-        System.out.println("Request URL: " + baseUrl + "/geocode?query=" + address);
-        System.out.println("Request Headers: ");
-        System.out.println("x-ncp-apigw-api-key-id: " + apiKeyId);
-        System.out.println("x-ncp-apigw-api-key: " + apiKey);
-
         try {
             return webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/geocode")
-                            .queryParam("query", address)    // 주소 쿼리 파라미터 추가
+                            .queryParam("query", address)
                             .build())
-                    .header("x-ncp-apigw-api-key-id", apiKeyId)  // API Key ID 헤더
-                    .header("x-ncp-apigw-api-key", apiKey)      // API Key 헤더
-                    .header("Accept", "application/json")       // 응답 형식 설정
+                    .header("x-ncp-apigw-api-key-id", apiKeyId)
+                    .header("x-ncp-apigw-api-key", apiKey)
+                    .header("Accept", "application/json")
                     .retrieve()
                     .bodyToMono(NaverApiResponse.class)
                     .map(response -> {
@@ -57,12 +47,12 @@ public class GeocodingApiClient implements MapService {
                             var addressData = response.getAddresses().get(0);
                             double x = Double.parseDouble(addressData.getX());
                             double y = Double.parseDouble(addressData.getY());
-                            return new LocationData(x, y);  // 좌표 반환
+                            return new LocationData(x, y);
                         } else {
                             throw new RuntimeException("API 응답에 주소가 없습니다.");
                         }
                     })
-                    .block();  // 블로킹 방식으로 결과 받아오기
+                    .block();
         } catch (WebClientResponseException e) {
             System.out.println("Error Status: " + e.getStatusCode());
             System.out.println("Error Body: " + e.getResponseBodyAsString());
