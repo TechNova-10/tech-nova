@@ -3,6 +3,7 @@ package com.tech_nova.delivery.presentation.exception.handler;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
+import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -65,6 +66,18 @@ public class GlobalExceptionHandler {
                 .build();
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(HubDeliveryCompletedException.class)
+    public ResponseEntity<ApiResponseDto<String>> HubDeliveryCompletedException(HubDeliveryCompletedException ex) {
+        ApiResponseDto<String> response = ApiResponseDto.<String>builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .statusMessage(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .data(null)
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseDto<String>> handleGenericException(Exception ex) {

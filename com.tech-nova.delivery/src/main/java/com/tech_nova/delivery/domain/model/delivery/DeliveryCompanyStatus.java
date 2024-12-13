@@ -1,6 +1,7 @@
 package com.tech_nova.delivery.domain.model.delivery;
 
 public enum DeliveryCompanyStatus {
+    COMPANY_WAITING,
     COMPANY_MOVING,
     DELIVERY_COMPLETED;
 
