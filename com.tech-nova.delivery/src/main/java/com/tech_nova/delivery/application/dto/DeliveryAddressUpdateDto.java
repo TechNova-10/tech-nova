@@ -8,8 +8,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder(access = AccessLevel.PRIVATE)
 @AllArgsConstructor
-public class DeliveryDto {
-    private UUID orderId;
+public class DeliveryAddressUpdateDto {
     private UUID recipientCompanyId;
     private String province;
     private String city;
@@ -17,8 +16,7 @@ public class DeliveryDto {
     private String roadName;
     private String detailAddress;
 
-    public static DeliveryDto create(
-            UUID orderId,
+    public static DeliveryAddressUpdateDto create(
             UUID recipientCompanyId,
             String province,
             String city,
@@ -26,8 +24,7 @@ public class DeliveryDto {
             String roadName,
             String detailAddress
     ) {
-        return DeliveryDto.builder()
-                .orderId(orderId)
+        return DeliveryAddressUpdateDto.builder()
                 .recipientCompanyId(recipientCompanyId)
                 .province(province)
                 .city(city)

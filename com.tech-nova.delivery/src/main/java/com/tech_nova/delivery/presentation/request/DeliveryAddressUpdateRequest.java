@@ -1,6 +1,6 @@
 package com.tech_nova.delivery.presentation.request;
 
-import com.tech_nova.delivery.application.dto.DeliveryDto;
+import com.tech_nova.delivery.application.dto.DeliveryAddressUpdateDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,8 +8,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class DeliveryRequest {
-    private UUID orderId;
+public class DeliveryAddressUpdateRequest {
     private UUID recipientCompanyId;
     private String province;
     private String city;
@@ -17,9 +16,8 @@ public class DeliveryRequest {
     private String roadName;
     private String detailAddress;
 
-    public DeliveryDto toDTO() {
-        return DeliveryDto.create(
-                this.orderId,
+    public DeliveryAddressUpdateDto toDTO() {
+        return DeliveryAddressUpdateDto.create(
                 this.recipientCompanyId,
                 this.province,
                 this.city,
