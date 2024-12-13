@@ -4,7 +4,6 @@ import com.tech_nova.movement.application.dtos.req.MovementRequestDto;
 import com.tech_nova.movement.application.dtos.res.MovementResponseDto;
 import com.tech_nova.movement.application.sevice.MovementService;
 import com.tech_nova.movement.presentation.dto.ApiResponseDto;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,6 +36,20 @@ public class MovementController {
             .message("허브간 이동 정보 생성 완료")
             .build(),
         HttpStatus.CREATED
+    );
+  }
+
+  @GetMapping("{movement_id}")
+  public ResponseEntity<ApiResponseDto<MovementResponseDto>> getMovement(
+      @PathVariable("movement_id") UUID movementId
+  ) {
+    return new ResponseEntity<>(
+        ApiResponseDto.<MovementResponseDto>builder()
+            .code(200)
+            .message("허브간 이동 정보 단일 조회 완료")
+            .data(movementService.getMovement(movementId))
+            .build(),
+        HttpStatus.OK
     );
   }
 }

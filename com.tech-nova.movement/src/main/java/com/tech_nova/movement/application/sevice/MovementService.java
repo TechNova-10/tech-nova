@@ -153,8 +153,12 @@ public class MovementService {
   public static String normalizeString(String str) {
     return Normalizer.normalize(str, Normalizer.Form.NFC);
   }
-//
-//  public List<MovementResponseDto> getMovementList() {
-//    return null;
-//  }
+
+  public MovementResponseDto getMovement(UUID movementId) {
+
+    Movement movement = movementRepository.findByMovementIdAndIsDeletedFalse(movementId)
+        .orElseThrow(() -> new IllegalArgumentException("해당 정보를 찾을 수 없습니다."));
+
+    return MovementResponseDto.of(movement);
+  }
 }
