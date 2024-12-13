@@ -1,4 +1,4 @@
-package com.tech_nova.delivery.application.dto;
+package com.tech_nova.delivery.application.dto.res;
 
 import com.tech_nova.delivery.domain.model.delivery.DeliveryHubStatus;
 import com.tech_nova.delivery.domain.model.delivery.DeliveryRouteRecord;

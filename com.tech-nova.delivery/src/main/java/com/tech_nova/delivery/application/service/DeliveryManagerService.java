@@ -1,7 +1,7 @@
 package com.tech_nova.delivery.application.service;
 
 import com.tech_nova.delivery.application.dto.DeliveryManagerDto;
-import com.tech_nova.delivery.application.dto.DeliveryManagerResponse;
+import com.tech_nova.delivery.application.dto.res.DeliveryManagerResponse;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;

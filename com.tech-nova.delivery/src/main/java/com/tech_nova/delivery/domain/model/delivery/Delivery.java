@@ -1,6 +1,7 @@
 package com.tech_nova.delivery.domain.model.delivery;
 
 import com.tech_nova.delivery.domain.model.Timestamped;
+import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,6 +50,9 @@ public class Delivery extends Timestamped {
     private String roadName;
 
     @Column
+    private String detailAddress;
+
+    @Column
     private String recipient;
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
@@ -72,6 +76,7 @@ public class Delivery extends Timestamped {
             String city,
             String district,
             String roadName,
+            String detailAddress,
             List<DeliveryRouteRecord> routeRecords
     ) {
         return Delivery.builder()
@@ -84,42 +89,89 @@ public class Delivery extends Timestamped {
                 .city(city)
                 .district(district)
                 .roadName(roadName)
+                .detailAddress(detailAddress)
                 .routeRecords(routeRecords)
                 .build();
     }
 
-    public void update(
-            UUID departureHubId,
-            UUID arrivalHubId,
-            DeliveryStatus currentStatus,
-            UUID recipientCompanyId,
-            String province,
-            String city,
-            String district,
-            String roadName,
-            String recipient) {
-        this.departureHubId = departureHubId;
-        this.arrivalHubId = arrivalHubId;
-        this.currentStatus = currentStatus;
-        this.recipientCompanyId = recipientCompanyId;
-        this.province = province;
-        this.city = city;
-        this.district = district;
-        this.roadName = roadName;
+    public void updateRecipient(String recipient, UUID updatedBy) {
         this.recipient = recipient;
+        markAsUpdated(updatedBy);
     }
 
-    public void updateCurrentStatus(DeliveryStatus currentStatus) {
-        this.currentStatus = currentStatus;
+    public void updateRouteRecord(
+            UUID deliveryRouteId,
+            DeliveryManager deliveryManager,
+            DeliveryHubStatus currentStatus,
+            Double realDistance,
+            String realTime,
+            UUID updatedBy) {
+        DeliveryRouteRecord routeRecord = routeRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.update(deliveryManager, currentStatus, realDistance, realTime);
+        routeRecord.markAsUpdated(updatedBy);
     }
 
-    public void updateRouteRecordState(UUID deliveryRouteId, DeliveryHubStatus currentStatus) {
+    public void updateRouteRecordState(UUID deliveryRouteId, DeliveryHubStatus currentStatus, UUID updatedBy) {
         DeliveryRouteRecord routeRecord = routeRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         routeRecord.updateCurrentStatus(currentStatus);
+        routeRecord.markAsUpdated(updatedBy);
+        this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
+    }
+
+    public void updateCompanyRouteRecord(
+            UUID deliveryRouteId,
+            DeliveryManager deliveryManager,
+            DeliveryCompanyStatus currentStatus,
+            Integer deliveryOrderSequence,
+            Double realDistance,
+            String realTime,
+            UUID updatedBy) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.update(deliveryManager, currentStatus, deliveryOrderSequence, realDistance, realTime);
+        routeRecord.markAsUpdated(updatedBy);
+    }
+
+    public void updateCompanyRouteRecordState(UUID deliveryRouteId, DeliveryCompanyStatus currentStatus, UUID updatedBy) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.updateCurrentStatus(currentStatus);
+        routeRecord.markAsUpdated(updatedBy);
+        this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
+    }
+
+    public void deleteRouteRecordState(UUID deliveryRouteId, UUID deletedBy) {
+        DeliveryRouteRecord routeRecord = routeRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        // 추후 인증 구현되면 사용자 Id로 변경
+        routeRecord.markAsDeleted(deletedBy);
+    }
+
+    public void deleteCompanyRouteRecordState(UUID deliveryRouteId, UUID deletedBy) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        // 추후 인증 구현되면 사용자 Id로 변경
+        routeRecord.markAsDeleted(deletedBy);
     }
 
     public void addRouteRecord(DeliveryRouteRecord routeRecord) {
@@ -133,5 +185,9 @@ public class Delivery extends Timestamped {
     public void markAsDeleted(UUID deletedBy) {
         super.markAsDeleted(deletedBy);
         this.isDeleted = true;
+    }
+
+    public void markAsUpdated(UUID updatedBy) {
+        super.markAsUpdated(updatedBy);
     }
 }
