@@ -4,6 +4,7 @@ public enum DeliveryStatus {
     HUB_WAITING,
     HUB_MOVING,
     HUB_ARRIVE,
+    COMPANY_WAITING,
     COMPANY_MOVING,
     DELIVERY_COMPLETED;
 
