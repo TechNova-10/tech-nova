@@ -1,17 +1,16 @@
 package com.tech_nova.delivery.application.service;
 
-import com.tech_nova.delivery.application.dto.DeliveryDto;
-import com.tech_nova.delivery.application.dto.DeliveryResponse;
-import com.tech_nova.delivery.application.dto.HubMovementData;
+import com.tech_nova.delivery.application.dto.*;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
+import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryRepository;
+import com.tech_nova.delivery.domain.repository.DeliveryRouteRecordRepository;
 import com.tech_nova.delivery.domain.service.DeliveryManagerAssignmentService;
-import com.tech_nova.delivery.infrastructure.DeliveryCompanyRouteRecordReadRepositoryImpl;
-import com.tech_nova.delivery.infrastructure.DeliveryRouteRecordReadRepositoryImpl;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
+import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +26,14 @@ public class DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryManagerRepository deliveryManagerRepository;
-    private final DeliveryRouteRecordReadRepositoryImpl routeRecordReadRepository;
-    private final DeliveryCompanyRouteRecordReadRepositoryImpl companyRouteRecordReadRepository;
+    private final DeliveryRouteRecordRepository deliveryRouteRecordRepository;
+    private final DeliveryCompanyRouteRecordRepository deliveryCompanyRouteRecordRepository;
 
     private final DeliveryManagerAssignmentService deliveryManagerAssignmentService;
 
     @Transactional
-    public UUID createDelivery(DeliveryDto request) {
-        if (deliveryRepository.existsByOrderId(request.getOrderId())) {
+    public void createDelivery(DeliveryDto request) {
+        if (deliveryRepository.existsByOrderIdAndIsDeletedFalse(request.getOrderId())) {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
 
@@ -51,6 +50,7 @@ public class DeliveryService {
                 request.getCity(),
                 request.getDistrict(),
                 request.getRoadName(),
+                request.getDetailAddress(),
                 new ArrayList<>()
         );
 
@@ -79,31 +79,171 @@ public class DeliveryService {
         }
 
         deliveryRepository.save(delivery);
-
-        return DeliveryResponse.of(delivery).getId();
     }
 
     @Transactional
-    public UUID updateRouteRecordState(UUID deliveryRouteId, String updateStatus) {
-        DeliveryRouteRecord routeRecord = routeRecordReadRepository.findById(deliveryRouteId)
+    public void updateDeliveryAddress(UUID deliveryId, DeliveryAddressUpdateDto request) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (delivery.isDeleted()) {
+            throw new IllegalStateException("삭제된 배송은 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.HUB_MOVING) {
+            throw new IllegalStateException("이동 중인 배송은 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.DELIVERY_COMPLETED) {
+            throw new IllegalStateException("완료된 배송은 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.COMPANY_MOVING) {
+            throw new IllegalStateException("이미 배송지로 출발해 수정할 수 없습니다.");
+        }
+
+        if (delivery.getCurrentStatus() == DeliveryStatus.COMPANY_WAITING) {
+            throw new IllegalStateException("허브에 도착해 배송 준비 중이므로 수정할 수 없습니다.");
+        }
+
+        List<DeliveryRouteRecord> routeRecords = deliveryRouteRecordRepository.findByDeliveryIdAndIsDeletedFalse(delivery.getId());
+        for (DeliveryRouteRecord record : routeRecords) {
+            if (record.getCurrentStatus() != DeliveryHubStatus.HUB_WAITING) {
+                throw new IllegalStateException("이미 배송이 시작되어 수정할 수 없습니다.");
+            }
+        }
+
+        UUID deletedBy = getUserIdFromToken("");
+        delivery.markAsDeleted(deletedBy);
+
+        DeliveryDto dto = DeliveryDto.create(
+                delivery.getOrderId(),
+                request.getRecipientCompanyId(),
+                request.getProvince(),
+                request.getCity(),
+                request.getDistrict(),
+                request.getRoadName(),
+                request.getDetailAddress()
+        );
+
+        createDelivery(dto);
+    }
+
+    @Transactional
+    public void updateRecipient(UUID deliveryId, String recipient) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (delivery.isDeleted()) {
+            throw new IllegalArgumentException("삭제된 배송에는 수령인을 입력할 수 없습니다.");
+        }
+
+        DeliveryCompanyRouteRecord companyRouteRecord =
+                deliveryCompanyRouteRecordRepository.findByDeliveryIdAndIsDeletedFalse(delivery.getId());
+        if (companyRouteRecord.getCurrentStatus() != DeliveryCompanyStatus.DELIVERY_COMPLETED) {
+            throw new IllegalArgumentException("배송이 완료되지 않으면 수령인을 입력할 수 없습니다.");
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateRecipient(recipient, updatedBy);
+    }
+
+    @Transactional
+    public void deleteDelivery(UUID deliveryId) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+        UUID deletedBy = getUserIdFromToken("");
+        delivery.markAsDeleted(deletedBy);
+    }
+
+    @Transactional
+    public UUID updateRouteRecord(UUID deliveryRouteId, DeliveryRouteRecordUpdateDto request) {
+        DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
 
-        DeliveryRouteRecord lastSequenceRouteRecord = delivery.getRouteRecords().stream()
-                .max(Comparator.comparingInt(DeliveryRouteRecord::getSequence))
-                .orElseThrow(() -> new IllegalArgumentException("배송 경로 레코드가 없습니다."));
-
-        DeliveryHubStatus newStatus = DeliveryHubStatus.valueOf(updateStatus);
-        validatePreviousDeliveryArrivalStatus(delivery.getRouteRecords(), deliveryRouteId, newStatus);
-
-        if (newStatus == DeliveryHubStatus.HUB_ARRIVE) {
-            if (lastSequenceRouteRecord.getId().equals(routeRecord.getId())) {
-                createCompanyRouteRecord(delivery);
-            }
+        DeliveryHubStatus newStatus = null;
+        if (request.getCurrentStatus() != null) {
+            newStatus = DeliveryHubStatus.valueOf(request.getCurrentStatus());
         }
 
-        delivery.updateRouteRecordState(deliveryRouteId, newStatus);
+        validateAdjacentRouteStatus(delivery.getRouteRecords(), routeRecord, newStatus);
+        validateCompanyRouteStatus(delivery);
+
+        DeliveryManager deliveryManager = null;
+        if (request.getDeliveryManagerId() != null) {
+            deliveryManager = deliveryManagerRepository.findById(request.getDeliveryManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateRouteRecord(deliveryRouteId, deliveryManager, newStatus, request.getRealDistance(), request.getRealTime(), updatedBy);
+
+        if (newStatus == DeliveryHubStatus.HUB_ARRIVE && routeRecord.getSequence() == delivery.getRouteRecords().size()) {
+            createCompanyRouteRecord(delivery);
+        }
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
+    public UUID updateRouteRecordState(UUID deliveryRouteId, String updateStatus) {
+        DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        DeliveryHubStatus newStatus = DeliveryHubStatus.valueOf(updateStatus);
+
+        validateAdjacentRouteStatus(delivery.getRouteRecords(), routeRecord, newStatus);
+        validateCompanyRouteStatus(delivery);
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateRouteRecordState(deliveryRouteId, newStatus, updatedBy);
+
+        if (newStatus == DeliveryHubStatus.HUB_ARRIVE && routeRecord.getSequence() == delivery.getRouteRecords().size()) {
+            createCompanyRouteRecord(delivery);
+        }
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
+    public UUID updateCompanyRouteRecord(UUID deliveryRouteId, DeliveryCompanyRouteRecordUpdateDto request) {
+        DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        DeliveryManager deliveryManager = null;
+        if (request.getDeliveryManagerId() != null) {
+            deliveryManager = deliveryManagerRepository.findById(request.getDeliveryManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
+        }
+
+        DeliveryCompanyStatus newStatus = null;
+        if (request.getCurrentStatus() != null) {
+            newStatus = DeliveryCompanyStatus.valueOf(request.getCurrentStatus());
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateCompanyRouteRecord(deliveryRouteId, deliveryManager, newStatus, request.getDeliveryOrderSequence(), request.getRealDistance(), request.getRealTime(), updatedBy);
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
+    public UUID updateCompanyRouteRecordState(UUID deliveryRouteId, String updateStatus) {
+        DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        DeliveryCompanyStatus newStatus = DeliveryCompanyStatus.valueOf(updateStatus);
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateCompanyRouteRecordState(deliveryRouteId, newStatus, updatedBy);
 
         return routeRecord.getId();
     }
@@ -121,8 +261,16 @@ public class DeliveryService {
             throw new IllegalArgumentException("배송 객체가 필요합니다.");
         }
 
-        if (companyRouteRecordReadRepository.existsByDeliveryId(delivery.getId())) {
+        if (deliveryCompanyRouteRecordRepository.existsByDeliveryIdAndIsDeletedFalse(delivery.getId())) {
             throw new IllegalStateException("이미 해당 배송에 대한 업체 경로 레코드가 생성되었습니다. 배송 ID: " + delivery.getId());
+        }
+
+        DeliveryRouteRecord lastSequenceRouteRecord = delivery.getRouteRecords().stream()
+                .max(Comparator.comparingInt(DeliveryRouteRecord::getSequence))
+                .orElseThrow(() -> new IllegalArgumentException("배송 경로 레코드가 없습니다."));
+
+        if (lastSequenceRouteRecord.getCurrentStatus() != DeliveryHubStatus.HUB_ARRIVE) {
+            throw new IllegalStateException("현재 최종 허브에 도착하지 않았습니다.");
         }
 
         // 업체 담당자 배정
@@ -139,7 +287,7 @@ public class DeliveryService {
                 deliveryManager,
                 delivery.getArrivalHubId(),
                 delivery.getRecipientCompanyId(),
-                DeliveryCompanyStatus.COMPANY_MOVING,
+                DeliveryCompanyStatus.COMPANY_WAITING,
                 1,
                 (double) 0,
                 "1h"
@@ -147,6 +295,27 @@ public class DeliveryService {
 
         delivery.addCompanyRouteRecord(companyRouteRecord);
     }
+
+    @Transactional
+    public void deleteRouteRecord(UUID deliveryRouteId) {
+        DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+        UUID deletedBy = getUserIdFromToken("");
+        delivery.deleteRouteRecordState(deliveryRouteId, deletedBy);
+    }
+
+    @Transactional
+    public void deleteCompanyRouteRecord(UUID deliveryRouteId) {
+        DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+        UUID deletedBy = getUserIdFromToken("");
+        delivery.deleteCompanyRouteRecordState(deliveryRouteId, deletedBy);
+    }
+
 
     private List<HubMovementData> createHubMovementDataList() {
         UUID hubId1 = UUID.randomUUID();
@@ -175,27 +344,53 @@ public class DeliveryService {
         }
     }
 
-    private void validatePreviousDeliveryArrivalStatus(List<DeliveryRouteRecord> routeRecords, UUID deliveryRouteId, DeliveryHubStatus newStatus) {
+    private void validateAdjacentRouteStatus(List<DeliveryRouteRecord> routeRecords, DeliveryRouteRecord routeRecord, DeliveryHubStatus newStatus) {
         routeRecords.sort(Comparator.comparingInt(DeliveryRouteRecord::getSequence));
+        int currentSequence = routeRecord.getSequence();
 
-        DeliveryRouteRecord currentRecord = routeRecords.stream()
-                .filter(routeRecord -> routeRecord.getId().equals(deliveryRouteId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다. ID: " + deliveryRouteId));
+        if (currentSequence > 1) {
+            DeliveryRouteRecord previousRecord = routeRecords.stream()
+                    .filter(record -> record.getSequence() == currentSequence - 1)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("이전 배송 경로를 찾을 수 없습니다. 현재 Sequence: " + currentSequence));
 
-        int currentSequence = currentRecord.getSequence();
+            boolean isInvalidStatus = newStatus != null
+                    && newStatus != DeliveryHubStatus.HUB_WAITING
+                    && previousRecord.getCurrentStatus() != DeliveryHubStatus.HUB_ARRIVE;
 
-        if (currentSequence == 1) {
-            return;
+            if (isInvalidStatus) {
+                throw new IllegalStateException("이전 허브의 배송이 완료되지 않았습니다.");
+            }
         }
 
-        DeliveryRouteRecord previousRecord = routeRecords.stream()
-                .filter(routeRecord -> routeRecord.getSequence() == currentSequence - 1)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("이전 배송 경로를 찾을 수 없습니다. 현재 Sequence: " + currentSequence));
+        if (currentSequence < routeRecords.size()) {
+            DeliveryRouteRecord nextRecord = routeRecords.stream()
+                    .filter(record -> record.getSequence() == currentSequence + 1)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("다음 배송 경로를 찾을 수 없습니다. 현재 Sequence: " + currentSequence));
 
-        if (newStatus != DeliveryHubStatus.HUB_WAITING && previousRecord.getCurrentStatus() != DeliveryHubStatus.HUB_ARRIVE) {
-            throw new IllegalStateException("이전 허브의 배송이 완료되지 않았습니다. 이전 경로 ID: " + previousRecord.getId());
+            if (nextRecord.getCurrentStatus() != DeliveryHubStatus.HUB_WAITING) {
+                throw new IllegalStateException("다음 허브의 배송이 시작되었습니다.");
+            }
         }
     }
+
+    private void validateCompanyRouteStatus(Delivery delivery) {
+        DeliveryCompanyRouteRecord companyRouteRecord =
+                deliveryCompanyRouteRecordRepository.findByDeliveryIdAndIsDeletedFalse(delivery.getId());
+
+        if (companyRouteRecord != null && companyRouteRecord.getCurrentStatus() != DeliveryCompanyStatus.COMPANY_WAITING) {
+            if (companyRouteRecord.getCurrentStatus() == DeliveryCompanyStatus.COMPANY_MOVING) {
+                throw new HubDeliveryCompletedException("현재 업체 배송이 시작되어 수정이 불가능합니다.");
+            } else if (companyRouteRecord.getCurrentStatus() == DeliveryCompanyStatus.DELIVERY_COMPLETED) {
+                throw new HubDeliveryCompletedException("현재 업체 배송이 완료되어 수정이 불가능합니다.");
+            }
+        }
+    }
+
+    private UUID getUserIdFromToken(String token) {
+        // 추후 인증 완성 시 토큰 내 정보로 ID 가져올 예정
+        return UUID.randomUUID();
+    }
+
 }
