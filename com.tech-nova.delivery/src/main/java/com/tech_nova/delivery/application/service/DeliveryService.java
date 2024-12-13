@@ -1,6 +1,7 @@
 package com.tech_nova.delivery.application.service;
 
 import com.tech_nova.delivery.application.dto.*;
+import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -35,7 +36,7 @@ public class DeliveryService {
     private final DeliveryManagerAssignmentService deliveryManagerAssignmentService;
 
     @Transactional
-    public void createDelivery(DeliveryDto request) {
+    public UUID createDelivery(DeliveryDto request) {
         if (deliveryRepository.existsByOrderIdAndIsDeletedFalse(request.getOrderId())) {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
@@ -82,6 +83,15 @@ public class DeliveryService {
         }
 
         deliveryRepository.save(delivery);
+
+        return DeliveryResponse.of(delivery).getId();
+    }
+
+    public DeliveryResponse getDelivery(UUID deliveryId) {
+        Delivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        return DeliveryResponse.of(delivery);
     }
 
     @Transactional
