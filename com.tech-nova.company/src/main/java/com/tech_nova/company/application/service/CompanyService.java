@@ -51,25 +51,31 @@ public class CompanyService {
         return ApiResponseDto.success("업체 생성 성공", null);
     }
 
+
+
     @Transactional
     public ApiResponseDto<CompanyResponse> updateCompany(UUID companyId, CompanyRequest requestDto, String token) {
-        Company company = companyRepository.findById(companyId)
+        Company existingCompany = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 업체 아이디"));
 
         validateHubId(requestDto.getHubId());
 
-        validateHubManager(token, requestDto.getHubId());
+//        validateUpdatePermission(existingCompany, requestDto, token);
 
-        company.setName(requestDto.getName());
-        company.setType(requestDto.getType());
-        company.setHubId(requestDto.getHubId());
-        company.setHubManagerId(requestDto.getHubManagerId());
-        company.setProvince(requestDto.getProvince());
-        company.setCity(requestDto.getCity());
-        company.setDistrict(requestDto.getDistrict());
-        company.setStreet(requestDto.getStreet());
+        Company updatedCompany = existingCompany.toBuilder()
+                .hubId(requestDto.getHubId())
+//                .hubManagerId(requestDto.getHubManagerId())
+                .name(requestDto.getName())
+                .type(requestDto.getType())
+                .province(requestDto.getProvince())
+                .city(requestDto.getCity())
+                .district(requestDto.getDistrict())
+                .street(requestDto.getStreet())
+                .build();
 
-        return ApiResponseDto.success("업체 수정 성공", new CompanyResponse(company));
+        companyRepository.save(updatedCompany);
+
+        return ApiResponseDto.success("업체 수정 성공", new CompanyResponse(updatedCompany));
     }
 
     @Transactional
@@ -147,6 +153,26 @@ public class CompanyService {
             throw new IllegalArgumentException("유효하지 않은 hubId!");
         }
     }
+
+//    private void validateUpdatePermission(Company existingCompany, CompanyRequest requestDto, String token) {
+//        String userRole = authServiceClient.getUserRole(token);
+//        String userId = authServiceClient.getUserId(token);
+//
+//        if ("MASTER".equals(userRole)) {
+//            // 마스터는 모든 업체 수정 가능
+//            return;
+//        } else if ("HUB_MANAGER".equals(userRole)) {
+//            // 허브 관리자는 해당 허브의 업체만 수정 가능
+//            validateHubManager(token, requestDto.getHubId());
+//        } else if ("COMPANY_MANAGER".equals(userRole)) {
+//            // 업체 관리자는 자신의 업체만 수정 가능
+//            if (!existingCompany.getHubManagerId().toString().equals(userId)) {
+//                throw new IllegalArgumentException("해당 업체를 수정할 권한이 없습니다.");
+//            }
+//        } else {
+//            throw new IllegalArgumentException("수정 권한이 없는 사용자입니다.");
+//        }
+//    }
 
     private void validateHubManager(String token, UUID hubId) {
         String userRole = authServiceClient.getUserRole(token);
