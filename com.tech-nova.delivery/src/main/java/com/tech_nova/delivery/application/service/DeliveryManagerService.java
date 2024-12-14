@@ -1,10 +1,12 @@
 package com.tech_nova.delivery.application.service;
 
+import com.tech_nova.delivery.HubData;
 import com.tech_nova.delivery.application.dto.DeliveryManagerDto;
 import com.tech_nova.delivery.application.dto.res.DeliveryManagerResponse;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
+import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DeliveryManagerService {
 
+    private final AuthService authService;
+    private final HubService hubService;
+
     private final DeliveryManagerRepository deliveryManagerRepository;
 
     @Transactional
@@ -23,6 +28,8 @@ public class DeliveryManagerService {
         if (deliveryManagerRepository.existsByManagerUserId(request.getManagerUserId())) {
             throw new IllegalArgumentException("해당 사용자는 이미 등록되어 있습니다.");
         }
+
+        validateHubExistence("", request.getAssignedHubId());
 
         validateRoleAndHubAssignment(request);
 
@@ -88,6 +95,23 @@ public class DeliveryManagerService {
             if (count >= 10) {
                 throw new IllegalArgumentException("업체 배송 담당자는 각 허브에 10명만 존재할 수 있습니다.");
             }
+        }
+    }
+
+    private void validateHubExistence(String token, UUID hubId) {
+        try {
+            // TODO 추후 주석처리된 코드를 적용
+            // String userRole = authService.getUserRole(token);
+            String userRole = "MASTER";
+            ApiResponseDto<HubData> response = hubService.getHub(hubId, userRole);
+            HubData hubData = response.getData();
+
+            if (hubData == null) {
+                throw new IllegalArgumentException("허브 정보를 찾을 수 없습니다.");
+            }
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("허브 검증에 실패했습니다.", e);
         }
     }
 }
