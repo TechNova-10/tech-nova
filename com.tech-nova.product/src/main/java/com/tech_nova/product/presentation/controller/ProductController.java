@@ -21,10 +21,10 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<ApiResponseDto<Void>> createProduct(
-            @RequestHeader("Authorization") String authorizationHeader,
+//            @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody ProductRequest request) {
-        String token = extractToken(authorizationHeader);
-        productService.createProduct(token, request);
+//        String token = extractToken(authorizationHeader);
+        productService.createProduct(request);
         return ResponseEntity.status(201).body(ApiResponseDto.success("상품 생성 완료", null));
     }
 
