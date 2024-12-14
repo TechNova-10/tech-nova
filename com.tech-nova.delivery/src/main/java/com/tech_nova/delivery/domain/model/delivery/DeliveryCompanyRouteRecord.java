@@ -37,6 +37,12 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
     @Column(nullable = false)
     private DeliveryCompanyStatus currentStatus;
 
+    @Column(nullable = false)
+    private Double latitude;
+
+    @Column(nullable = false)
+    private Double longitude;
+
     @Column
     private Integer deliveryOrderSequence;
 
@@ -61,7 +67,8 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
             UUID departureHubId,
             UUID recipientCompanyId,
             DeliveryCompanyStatus currentStatus,
-            Integer deliveryOrderSequence,
+            double latitude,
+            double longitude,
             Double expectedDistance,
             String expectedTime
     ) {
@@ -71,7 +78,8 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
                 .departureHubId(departureHubId)
                 .recipientCompanyId(recipientCompanyId)
                 .currentStatus(currentStatus)
-                .deliveryOrderSequence(deliveryOrderSequence)
+                .latitude(latitude)
+                .longitude(longitude)
                 .expectedDistance(expectedDistance)
                 .expectedTime(expectedTime)
                 .build();
