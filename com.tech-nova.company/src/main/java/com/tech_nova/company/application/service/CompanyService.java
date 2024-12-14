@@ -1,14 +1,15 @@
 package com.tech_nova.company.application.service;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.tech_nova.company.application.client.AuthServiceClient;
-import com.tech_nova.company.application.client.HubServiceClient;
+import com.tech_nova.company.domain.model.QCompany;
+import com.tech_nova.company.infrastructure.client.AuthServiceClient;
+import com.tech_nova.company.infrastructure.client.HubServiceClient;
 import com.tech_nova.company.application.dto.CompanyRequest;
 import com.tech_nova.company.application.dto.CompanyResponse;
 import com.tech_nova.company.domain.model.Company;
-import com.tech_nova.company.domain.model.QCompany;
 import com.tech_nova.company.domain.model.CompanyType;
 import com.tech_nova.company.domain.repository.CompanyRepository;
+import com.tech_nova.company.presentation.dto.ApiResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +29,7 @@ public class CompanyService {
     private final AuthServiceClient authServiceClient;
 
     @Transactional
-    public CompanyResponse createCompany(CompanyRequest requestDto, String token) {
+    public ApiResponseDto<Void> createCompany(CompanyRequest requestDto, String token) {
 
         validateHubId(requestDto.getHubId());
 
@@ -47,14 +48,13 @@ public class CompanyService {
 
         companyRepository.save(company);
 
-        return new CompanyResponse(company);
+        return ApiResponseDto.success("업체 생성 성공", null);
     }
 
     @Transactional
-    public CompanyResponse updateCompany(UUID companyId, CompanyRequest requestDto, String token) {
+    public ApiResponseDto<CompanyResponse> updateCompany(UUID companyId, CompanyRequest requestDto, String token) {
         Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Company not found with ID: " + companyId));
-
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 업체 아이디"));
 
         validateHubId(requestDto.getHubId());
 
@@ -69,36 +69,51 @@ public class CompanyService {
         company.setDistrict(requestDto.getDistrict());
         company.setStreet(requestDto.getStreet());
 
-        return new CompanyResponse(company);
+        return ApiResponseDto.success("업체 수정 성공", new CompanyResponse(company));
     }
 
     @Transactional
-    public void deleteCompany(UUID companyId, String token) {
+    public ApiResponseDto<Void> deleteCompany(UUID companyId, String token) {
         Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Company not found with ID: " + companyId));
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 업체 아이디"));
 
         validateHubManager(token, company.getHubId());
 
         company.softDelete();
         companyRepository.save(company);
+
+        return ApiResponseDto.successDelete();
+    }
+
+    // 업체 단건 조회
+    @Transactional(readOnly = true)
+    public ApiResponseDto<CompanyResponse> getCompanyById(UUID companyId) {
+        Company company = companyRepository.findByIdAndIsDeletedFalse(companyId)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 업체 아이디"));
+
+        return ApiResponseDto.success("업체 단건 조회 성공", new CompanyResponse(company));
     }
 
     @Transactional(readOnly = true)
-    public List<CompanyResponse> getCompaniesByHubId(UUID hubId) {
+    public ApiResponseDto<List<CompanyResponse>> getCompaniesByHubId(UUID hubId) {
         List<Company> companies = companyRepository.findAllByHubIdAndIsDeletedFalse(hubId);
-        return companies.stream()
+        List<CompanyResponse> response = companies.stream()
                 .map(CompanyResponse::new)
                 .collect(Collectors.toList());
+
+        return ApiResponseDto.success("허브 ID로 업체 조회 성공", response);
     }
 
-    // 동적 검색 및 페이징 처리
+    //동적 검색 및 페이징 처리
     @Transactional(readOnly = true)
-    public Page<CompanyResponse> searchCompanies(String name, String type, String city, Pageable pageable) {
+    public ApiResponseDto<Page<CompanyResponse>> searchCompanies(String name, String type, String city, Pageable pageable) {
         BooleanExpression filter = buildFilter(name, type, city);
 
         Page<Company> companies = companyRepository.findAll(filter, pageable);
 
-        return companies.map(CompanyResponse::new);
+        Page<CompanyResponse> response = companies.map(CompanyResponse::new);
+
+        return ApiResponseDto.success("업체 검색 성공", response);
     }
 
     // 동적 필터 조건 생성
@@ -129,7 +144,7 @@ public class CompanyService {
     private void validateHubId(UUID hubId) {
         boolean isValid = hubServiceClient.isHubIdValid(hubId.toString());
         if (!isValid) {
-            throw new IllegalArgumentException("Invalid hubId: " + hubId);
+            throw new IllegalArgumentException("유효하지 않은 hubId!");
         }
     }
 
@@ -141,8 +156,7 @@ public class CompanyService {
 
         String userHubId = authServiceClient.getUserHubId(token);
         if (!hubId.toString().equals(userHubId)) {
-            throw new IllegalArgumentException("You do not have permission to manage this hub's companies.");
+            throw new IllegalArgumentException("해당 허브의 업체들 관련해서 관리할 권한이 없습니다.");
         }
     }
-
 }
