@@ -14,6 +14,8 @@ public interface DeliveryManagerRepository {
 
     Optional<DeliveryManager> findById(UUID id);
 
+    Optional<DeliveryManager> findByIdAndIsDeletedFals(UUID id);
+
     boolean existsByManagerUserId(UUID managerUserId);
 
     DeliveryManager save(DeliveryManager deliveryManager);
