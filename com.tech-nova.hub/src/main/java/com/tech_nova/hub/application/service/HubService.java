@@ -1,12 +1,14 @@
 package com.tech_nova.hub.application.service;
 
 import com.tech_nova.hub.application.dtos.req.HubRequestDto;
+import com.tech_nova.hub.application.dtos.res.HubClientResponseDto;
 import com.tech_nova.hub.application.dtos.res.HubResponseDto;
 import com.tech_nova.hub.domain.model.Hub;
 import com.tech_nova.hub.domain.repository.HubRepository;
 import com.tech_nova.hub.presentation.exception.HubNotFoundException;
 import com.tech_nova.hub.presentation.exception.MasterRoleRequiredException;
 import com.tech_nova.hub.presentation.exception.RoleNotAllowedException;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,14 @@ public class HubService {
 
     validateMasterRole(role);
     findHubById(hubId).deleteHub(userId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<HubClientResponseDto> getHubList() {
+    return hubRepository.findAll()
+        .stream()
+        .map(HubClientResponseDto::of)
+        .toList();
   }
 
   private void validateMasterRole(String role) {
