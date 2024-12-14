@@ -1,5 +1,6 @@
 package com.tech_nova.delivery.application.service;
 
+import com.tech_nova.delivery.HubData;
 import com.tech_nova.delivery.application.dto.*;
 import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.domain.model.delivery.*;
@@ -13,7 +14,6 @@ import com.tech_nova.delivery.domain.service.DeliveryManagerAssignmentService;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +26,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DeliveryService {
 
+    private final AuthService authService;
+    private final UserService userService;
+    private final HubService hubService;
     private final MapService mapService;
 
     private final DeliveryRepository deliveryRepository;
@@ -406,7 +409,6 @@ public class DeliveryService {
         }
     }
 
-    @Cacheable(cacheNames = "coordinates_cache")
     public LocationData fetchCoordinates(String address) {
         return mapService.getCoordinates(address);
     }
@@ -416,4 +418,40 @@ public class DeliveryService {
         return UUID.randomUUID();
     }
 
+    // 추후 인증 서비스 구현 후 연결 예정
+    private void validateDeliveryMangerAssignedHub(String token, Delivery delivery) {
+        UUID userId = authService.getUserId(token);
+        String userRole = authService.getUserRole(token);
+
+        if ("DELIVERY_MANAGER".equals(userRole)) {
+            DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFals(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+            UUID managerAssignedHubId = manager.getAssignedHubId();
+            UUID departureHubId = delivery.getDepartureHubId();
+            UUID arrivalHubId = delivery.getArrivalHubId();
+
+            if (!managerAssignedHubId.equals(departureHubId) && !managerAssignedHubId.equals(arrivalHubId)) {
+                throw new IllegalArgumentException("속하지 않은 허브의 배송은 수정할 수 없습니다.");
+            }
+        }
+    }
+
+    // 추후 인증 서비스 구현 후 연결 예정
+    private void validateHubManagerAssignedHub(String token, Delivery delivery) {
+        UUID userId = authService.getUserId(token);
+        String userRole = authService.getUserRole(token);
+
+        if ("HUB_MANAGER".equals(userRole)) {
+            UUID departureHubId = delivery.getDepartureHubId();
+            UUID arrivalHubId = delivery.getArrivalHubId();
+
+            HubData departureHub = hubService.getHub(departureHubId, userRole).getData();
+            HubData arrivalHub = hubService.getHub(arrivalHubId, userRole).getData();
+
+            if (!userId.equals(departureHub.getHubManagerId()) && !userId.equals(arrivalHub.getHubManagerId())) {
+                throw new IllegalArgumentException("매니저가 아닌 허브의 배송은 수정할 수 없습니다.");
+            }
+        }
+    }
 }

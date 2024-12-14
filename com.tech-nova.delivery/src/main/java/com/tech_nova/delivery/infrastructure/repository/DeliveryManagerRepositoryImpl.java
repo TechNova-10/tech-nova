@@ -1,4 +1,4 @@
-package com.tech_nova.delivery.infrastructure;
+package com.tech_nova.delivery.infrastructure.repository;
 
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;

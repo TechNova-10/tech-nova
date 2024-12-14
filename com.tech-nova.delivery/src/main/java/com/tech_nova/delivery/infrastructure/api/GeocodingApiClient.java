@@ -4,6 +4,7 @@ import com.tech_nova.delivery.application.dto.LocationData;
 import com.tech_nova.delivery.application.service.MapService;
 import com.tech_nova.delivery.infrastructure.dto.NaverApiResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -29,6 +30,7 @@ public class GeocodingApiClient implements MapService {
 
 
     @Override
+    @Cacheable(value = "locationCache", key = "#address")
     public LocationData getCoordinates(String address) {
         try {
             return webClient.get()
