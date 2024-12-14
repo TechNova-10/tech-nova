@@ -26,6 +26,7 @@ public class MovementResponseDto {
         .movementInfoId(movement.getMovementId())
         .departureHubId(movement.getDepartureHubId())
         .intermediateHubId(movement.getIntermediateHubId())
+        .arrivalHubId(movement.getArrivalHubId())
         .timeTravel(movement.getTimeTravel())
         .distance(movement.getDistance())
         .build();

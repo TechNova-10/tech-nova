@@ -39,7 +39,7 @@ public class MovementController {
     );
   }
 
-  @GetMapping("/{movement_id}")
+  @GetMapping("/{movementId}")
   public ResponseEntity<ApiResponseDto<MovementResponseDto>> getMovement(
       @PathVariable UUID movementId
   ) {
