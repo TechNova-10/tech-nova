@@ -7,9 +7,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "company-service", path = "/api/v1/companies")
 public interface CompanyServiceClient {
 
-    @GetMapping("/{companyId}/exists")
-    boolean isCompanyIdValid(@PathVariable("companyId") String companyId); // 회사 ID 검증
+    @GetMapping("/{companyId}")
+    boolean isCompanyIdValid(@PathVariable("companyId") String companyId); // 업체 ID 검증
 
-    @GetMapping("/hubs/{hubId}/exists")
+    @GetMapping("/hubs/{hubId}")
     boolean isHubIdValid(@PathVariable("hubId") String hubId); // 허브 ID 검증
+
 }
