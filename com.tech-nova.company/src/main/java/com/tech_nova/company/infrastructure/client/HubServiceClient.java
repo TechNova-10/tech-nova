@@ -1,4 +1,4 @@
-package com.tech_nova.company.application.client;
+package com.tech_nova.company.infrastructure.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
