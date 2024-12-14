@@ -50,6 +50,13 @@ public class DeliveryManagerService {
         return DeliveryManagerResponse.of(deliveryManager).getId();
     }
 
+    public DeliveryManagerResponse getDeliveryManager(UUID deliveryManagerId) {
+        DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFalse(deliveryManagerId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+        return DeliveryManagerResponse.of(manager);
+    }
+
     private void checkDeliveryOrderSequenceExists(UUID assignedHubId, Integer deliveryOrderSequence) {
         if (deliveryManagerRepository.existsByAssignedHubIdAndDeliveryOrderSequence(assignedHubId, deliveryOrderSequence)) {
             throw new DeliveryOrderSequenceAlreadyExistsException("해당 순번은 이미 존재합니다.");
