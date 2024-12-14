@@ -2,7 +2,9 @@ package com.tech_nova.delivery.application.service;
 
 import com.tech_nova.delivery.HubData;
 import com.tech_nova.delivery.application.dto.*;
+import com.tech_nova.delivery.application.dto.res.DeliveryCompanyRouteRecordResponse;
 import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
+import com.tech_nova.delivery.application.dto.res.DeliveryRouteRecordResponse;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -92,11 +94,26 @@ public class DeliveryService {
 
     public DeliveryResponse getDelivery(UUID deliveryId) {
         // TODO: 마스터와 허브 관리자이면 삭제된 배송도 볼 수 있게 수정
-
         Delivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
 
         return DeliveryResponse.of(delivery);
+    }
+
+    public DeliveryRouteRecordResponse getDeliveryRouteRecord(UUID deliveryId) {
+        // TODO: 마스터와 허브 관리자이면 삭제된 배송도 볼 수 있게 수정
+        DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findByIdAndIsDeletedFalse(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 경로를 찾을 수 없습니다."));
+
+        return DeliveryRouteRecordResponse.of(routeRecord);
+    }
+
+    public DeliveryCompanyRouteRecordResponse getDeliveryCompanyRouteRecord(UUID deliveryId) {
+        // TODO: 마스터와 허브 관리자이면 삭제된 배송도 볼 수 있게 수정
+        DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findByIdAndIsDeletedFalse(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 경로를 찾을 수 없습니다."));
+
+        return DeliveryCompanyRouteRecordResponse.of(routeRecord);
     }
 
     @Transactional
@@ -429,7 +446,7 @@ public class DeliveryService {
             return true;
         }
 
-        DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFals(userId)
+        DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFalse(userId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
 
         UUID managerAssignedHubId = manager.getAssignedHubId();
