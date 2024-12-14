@@ -91,6 +91,8 @@ public class DeliveryService {
     }
 
     public DeliveryResponse getDelivery(UUID deliveryId) {
+        // TODO: 마스터와 허브 관리자이면 삭제된 배송도 볼 수 있게 수정
+
         Delivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
 
@@ -413,45 +415,51 @@ public class DeliveryService {
         return mapService.getCoordinates(address);
     }
 
+    // TODO: 추후 인증 완성 시 토큰 내 정보로 ID 가져올 예정
     private UUID getUserIdFromToken(String token) {
-        // 추후 인증 완성 시 토큰 내 정보로 ID 가져올 예정
         return UUID.randomUUID();
     }
 
-    // 추후 인증 서비스 구현 후 연결 예정
-    private void validateDeliveryMangerAssignedHub(String token, Delivery delivery) {
+    // TODO: 각종 검증 서비스 추후 인증 서비스 구현 후 연결 예정
+    private boolean validateDeliveryManagerAssignedHub(String token, Delivery delivery) {
         UUID userId = authService.getUserId(token);
         String userRole = authService.getUserRole(token);
 
-        if ("DELIVERY_MANAGER".equals(userRole)) {
-            DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFals(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
-
-            UUID managerAssignedHubId = manager.getAssignedHubId();
-            UUID departureHubId = delivery.getDepartureHubId();
-            UUID arrivalHubId = delivery.getArrivalHubId();
-
-            if (!managerAssignedHubId.equals(departureHubId) && !managerAssignedHubId.equals(arrivalHubId)) {
-                throw new IllegalArgumentException("속하지 않은 허브의 배송은 수정할 수 없습니다.");
-            }
+        if (!"DELIVERY_MANAGER".equals(userRole)) {
+            return true;
         }
+
+        DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFals(userId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+        UUID managerAssignedHubId = manager.getAssignedHubId();
+        UUID departureHubId = delivery.getDepartureHubId();
+        UUID arrivalHubId = delivery.getArrivalHubId();
+
+        return managerAssignedHubId.equals(departureHubId) || managerAssignedHubId.equals(arrivalHubId);
     }
 
-    // 추후 인증 서비스 구현 후 연결 예정
-    private void validateHubManagerAssignedHub(String token, Delivery delivery) {
+    private boolean validateHubManagerAssignedHub(String token, Delivery delivery) {
         UUID userId = authService.getUserId(token);
         String userRole = authService.getUserRole(token);
 
-        if ("HUB_MANAGER".equals(userRole)) {
-            UUID departureHubId = delivery.getDepartureHubId();
-            UUID arrivalHubId = delivery.getArrivalHubId();
-
-            HubData departureHub = hubService.getHub(departureHubId, userRole).getData();
-            HubData arrivalHub = hubService.getHub(arrivalHubId, userRole).getData();
-
-            if (!userId.equals(departureHub.getHubManagerId()) && !userId.equals(arrivalHub.getHubManagerId())) {
-                throw new IllegalArgumentException("매니저가 아닌 허브의 배송은 수정할 수 없습니다.");
-            }
+        if (!"HUB_MANAGER".equals(userRole)) {
+            return true;
         }
+
+        UUID departureHubId = delivery.getDepartureHubId();
+        UUID arrivalHubId = delivery.getArrivalHubId();
+
+        HubData departureHub = hubService.getHub(departureHubId, userRole).getData();
+        HubData arrivalHub = hubService.getHub(arrivalHubId, userRole).getData();
+
+        return userId.equals(departureHub.getHubManagerId()) || userId.equals(arrivalHub.getHubManagerId());
+    }
+
+    private boolean validateMaster(String token, Delivery delivery) {
+        UUID userId = authService.getUserId(token);
+        String userRole = authService.getUserRole(token);
+
+        return "HUB_MANAGER".equals(userRole);
     }
 }
