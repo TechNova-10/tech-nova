@@ -84,6 +84,18 @@ public class MovementService {
     return MovementResponseDto.of(movement);
   }
 
+  @Transactional
+  public void deleteMovement(UUID movementId, UUID userId, String role) {
+
+    validateMasterRole(role);
+    findByMovementId(movementId).deleteMovement(userId);
+  }
+
+  private Movement findByMovementId(UUID movementId) {
+    return movementRepository.findById(movementId)
+        .orElseThrow(() -> new IllegalArgumentException("해당 허브가 존재하지 않습니다."));
+  }
+
   private double calculateTotalDistance(
       HubResponseDto departureHub,
       HubResponseDto intermediateHub,
@@ -115,7 +127,7 @@ public class MovementService {
     return EARTH_RADIUS * c;
   }
 
-  private static double calculateExpectedTime(double distance) {
+  private double calculateExpectedTime(double distance) {
     return distance / AVERAGE_SPEED_KMH;
   }
 
@@ -126,7 +138,7 @@ public class MovementService {
         .orElseThrow(() -> new RuntimeException(errorMessage));
   }
 
-  public static String findIntermediateHub(String departureHubName) {
+  public String findIntermediateHub(String departureHubName) {
 
     departureHubName = normalizeString(departureHubName.trim());
 
@@ -154,7 +166,7 @@ public class MovementService {
         .orElseThrow(() -> new IllegalArgumentException("해당 데이터가 존재하지 않습니다."));
   }
 
-  private static double roundToTwoDecimalPlaces(double value) {
+  private double roundToTwoDecimalPlaces(double value) {
     return Math.round(value * 100.0) / 100.0;
   }
 
