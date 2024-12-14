@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +38,9 @@ public class MovementService {
     regionAdjacency.put("대구광역시 센터", List.of("경북 센터", "대구광역시 센터", "경남 센터", "부산광역시 센터", "울산광역시 센터"));
   }
 
-  public MovementResponseDto createMovement(MovementRequestDto movementRequestDto, UUID userId, String role) {
+  @Transactional
+  public MovementResponseDto createMovement(MovementRequestDto movementRequestDto, UUID userId,
+      String role) {
 
     validateMasterRole(role);
 
@@ -68,6 +71,15 @@ public class MovementService {
     );
 
     movementRepository.save(movement);
+
+    return MovementResponseDto.of(movement);
+  }
+
+  @Transactional(readOnly = true)
+  public MovementResponseDto getMovement(UUID movementId) {
+
+    Movement movement = movementRepository.findByMovementIdAndIsDeletedFalse(movementId)
+        .orElseThrow(() -> new IllegalArgumentException("해당 정보를 찾을 수 없습니다."));
 
     return MovementResponseDto.of(movement);
   }
