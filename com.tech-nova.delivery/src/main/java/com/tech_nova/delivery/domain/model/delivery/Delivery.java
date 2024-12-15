@@ -205,10 +205,6 @@ public class Delivery extends Timestamped {
     public void updateCompanyRouteRecordOrderSequence(
             UUID deliveryRouteId,
             int sequnce) {
-        System.out.println("?? deliveryRouteId: " + deliveryRouteId);
-        companyRouteRecords.stream()
-                .filter(record -> record.getId().equals(deliveryRouteId))
-                .forEach(record -> System.out.println("Matching Record ID: " + record.getId()));
         DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
