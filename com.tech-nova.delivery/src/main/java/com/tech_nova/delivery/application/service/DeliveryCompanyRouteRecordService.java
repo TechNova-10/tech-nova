@@ -8,6 +8,8 @@ import com.tech_nova.delivery.domain.model.delivery.Delivery;
 import com.tech_nova.delivery.domain.model.delivery.DeliveryCompanyRouteRecord;
 import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@EnableScheduling
 public class DeliveryCompanyRouteRecordService {
     private final AuthService authService;
     private final GeocodingApiService geocodingApiService;
@@ -27,6 +30,7 @@ public class DeliveryCompanyRouteRecordService {
     private final DeliveryCompanyRouteRecordRepository deliveryCompanyRouteRecordRepository;
 
     @Transactional
+    @Scheduled(cron = "0 0 6 * * ?")
     public void setOrderSequence() {
         // TODO 추후 권한 검증 추가
         List<DeliveryCompanyRouteRecord> deliveryCompanyRouteRecords = deliveryCompanyRouteRecordRepository.findAllByIsDeletedFalseGroupedByDeliveryManager();
