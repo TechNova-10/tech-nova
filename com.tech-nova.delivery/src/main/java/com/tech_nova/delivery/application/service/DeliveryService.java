@@ -1,11 +1,9 @@
 package com.tech_nova.delivery.application.service;
 
-import com.tech_nova.delivery.HubData;
 import com.tech_nova.delivery.application.dto.*;
 import com.tech_nova.delivery.application.dto.res.DeliveryCompanyRouteRecordResponse;
 import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.application.dto.res.DeliveryRouteRecordResponse;
-import com.tech_nova.delivery.application.dto.res.HubResponseDto;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -14,13 +12,14 @@ import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryRouteRecordRepository;
 import com.tech_nova.delivery.domain.service.DeliveryManagerAssignmentService;
+import com.tech_nova.delivery.infrastructure.dto.CompanyResponse;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
+import com.tech_nova.delivery.infrastructure.dto.MovementRequestDto;
+import com.tech_nova.delivery.infrastructure.dto.MovementResponse;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +32,7 @@ public class DeliveryService {
     private final AuthService authService;
     private final CompanyService companyService;
     private final HubService hubService;
+    private final HubMovementService hubMovementService;
     private final MapService mapService;
 
     private final DeliveryRepository deliveryRepository;
@@ -51,11 +51,9 @@ public class DeliveryService {
         // 요청 업체 ID
         UUID recipientCompanyId = request.getRecipientCompanyId();
         // CompanyService로 업체 정보 조회후 소속 허브 아이디 가져와 출발 허브로 지정
-        UUID departureHubId = UUID.randomUUID();
+        CompanyResponse recipientCompany = companyService.getCompanyById(recipientCompanyId).getData();
+        UUID departureHubId = recipientCompany.getHubId();
         UUID arrivalHubId = validateHubExistence(request.getProvince(), request.getCity());
-
-        // 추후 hubService 이용해 List<HubMovementData> 가져오기
-        List<HubMovementData> hubMovementDatas = createHubMovementDataList();
 
         Delivery delivery = Delivery.create(
                 request.getOrderId(),
@@ -72,9 +70,9 @@ public class DeliveryService {
         );
 
         // 이동 경로 생성
-        // 1. 이동 서비스로 이동정보 생성
-        // 2. 생성 후 반환되는 uuid로 다시 이동정보 조회
-        // 3. 경유지 있으면 분할해 두개저장, 없으면 단건으로 RouteRecord 저장
+        MovementRequestDto movementRequestDto = new MovementRequestDto(departureHubId, arrivalHubId);
+        MovementResponse movementResponse = hubMovementService.createMovement(movementRequestDto, UUID.randomUUID(), "MASTER").getData();
+        List<HubMovementData> hubMovementDatas = createHubMovementDataList(movementResponse);
 
         // 담당자 배정
         // 생성 테스트 위해 임시로 첫번째 허브 배송 담당자 데이터 1명만 이용
@@ -344,7 +342,7 @@ public class DeliveryService {
                 coordinates.getLatitude(),
                 coordinates.getLongitude(),
                 (double) 0,
-                "1h"
+                (double) 0
         );
 
         delivery.addCompanyRouteRecord(companyRouteRecord);
@@ -370,15 +368,25 @@ public class DeliveryService {
         delivery.deleteCompanyRouteRecordState(deliveryRouteId, deletedBy);
     }
 
-    private List<HubMovementData> createHubMovementDataList() {
-        UUID hubId1 = UUID.randomUUID();
-        UUID hubId2 = UUID.randomUUID();
-        UUID hubId3 = UUID.fromString("e0ad3c6b-6240-45a2-9169-65b4e83b2ea6");
+    private List<HubMovementData> createHubMovementDataList(MovementResponse movementResponse) {
+        UUID departureHubId = movementResponse.getDepartureHubId();
+        UUID intermediateHubId = movementResponse.getIntermediateHubId();
+        UUID arrivalHubId = movementResponse.getArrivalHubId();
 
-        // 임시 데이터
+        System.out.println("departureHubId: " + departureHubId);
+        System.out.println("intermediateHubId: " + intermediateHubId);
+        System.out.println("arrivalHubId: " + arrivalHubId);
+
         List<HubMovementData> hubMovementDatas = new ArrayList<>();
-        hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), hubId1, hubId2, "1h", 100.0));
-        hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), hubId2, hubId3, "2h", 200.0));
+
+        if (departureHubId.equals(intermediateHubId)) {
+            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, arrivalHubId, movementResponse.getTimeTravel(), movementResponse.getDistance()));
+        } else {
+            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, intermediateHubId, 160.0, 100.0));
+            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), intermediateHubId, arrivalHubId, 160.0, 200.0));
+        }
+
+        System.out.println("hubMovementDatas size: " + hubMovementDatas.size());
 
         return hubMovementDatas;
     }
@@ -535,12 +543,9 @@ public class DeliveryService {
         }
 
         // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
-        ApiResponseDto<Page<HubResponseDto>> response = hubService.getHubs(hubSearchDto, "MASTER", Pageable.unpaged());
-
-        if (response.getData() != null && !response.getData().getContent().isEmpty()) {
-            return response.getData().getContent().get(0).getHubId();
-        }
-
-        return null;
+        return Optional.ofNullable(hubService.getHubs(hubSearchDto, "MASTER", 0, 10).getData())
+                .filter(hubsPage -> !hubsPage.getContent().isEmpty())
+                .map(hubsPage -> hubsPage.getContent().get(0).getHubId())
+                .orElse(null);
     }
 }

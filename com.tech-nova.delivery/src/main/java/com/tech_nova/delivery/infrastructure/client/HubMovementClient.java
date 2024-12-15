@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.UUID;
 
-@FeignClient(name = "movement-service", url = "http://auth-service/api/v1/movements")
+@FeignClient(name = "movement-service")
 public interface HubMovementClient extends HubMovementService {
-    @PostMapping
+    @PostMapping("/api/v1/movements")
     ApiResponseDto<MovementResponse> createMovement(@RequestBody MovementRequestDto movementRequestDto, @RequestHeader(value = "user_id", required = true) UUID userId, @RequestHeader(value = "role", required = true) String role);
 }
