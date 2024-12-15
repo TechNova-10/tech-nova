@@ -35,6 +35,12 @@ public class DeliveryRouteRecordController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", routeRecordId));
     }
 
+    @PatchMapping("/{delivery_route_id}/delivery-managers")
+    public ResponseEntity<ApiResponseDto<UUID>> updateDeliveryRouteStatus(@PathVariable("delivery_route_id") UUID deliveryRouteId, @RequestParam("delivery_manage_id") UUID deliveryManagerId) {
+        UUID routeRecordId = deliveryService.updateRouteRecordDeliveryManager(deliveryRouteId, deliveryManagerId);
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", routeRecordId));
+    }
+
     @DeleteMapping("/{delivery_route_id}")
     public ResponseEntity<ApiResponseDto<Void>> deleteDeliveryRoute(@PathVariable("delivery_route_id") UUID deliveryRouteId) {
         deliveryService.deleteRouteRecord(deliveryRouteId);
