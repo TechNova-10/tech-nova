@@ -15,7 +15,7 @@ public class DeliveryRouteRecordDto {
     private Integer sequence;
     private String currentStatus;
     private Double expectedDistance;
-    private String expectedTime;
+    private Double expectedTime;
 
     public static DeliveryRouteRecordDto create(
             UUID deliveryManagerId,
@@ -24,7 +24,7 @@ public class DeliveryRouteRecordDto {
             Integer sequence,
             String currentStatus,
             Double expectedDistance,
-            String expectedTime
+            Double expectedTime
     ) {
         return DeliveryRouteRecordDto.builder()
                 .deliveryManagerId(deliveryManagerId)

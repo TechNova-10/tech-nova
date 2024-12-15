@@ -1,14 +1,14 @@
 package com.tech_nova.company.application.service;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.tech_nova.company.domain.model.QCompany;
-import com.tech_nova.company.infrastructure.client.AuthServiceClient;
-import com.tech_nova.company.infrastructure.client.HubServiceClient;
 import com.tech_nova.company.application.dto.CompanyRequest;
 import com.tech_nova.company.application.dto.CompanyResponse;
 import com.tech_nova.company.domain.model.Company;
 import com.tech_nova.company.domain.model.CompanyType;
+import com.tech_nova.company.domain.model.QCompany;
 import com.tech_nova.company.domain.repository.CompanyRepository;
+import com.tech_nova.company.infrastructure.client.AuthServiceClient;
+import com.tech_nova.company.infrastructure.client.HubServiceClient;
 import com.tech_nova.company.presentation.dto.ApiResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -51,8 +51,6 @@ public class CompanyService {
         return ApiResponseDto.success("업체 생성 성공", null);
     }
 
-
-
     @Transactional
     public ApiResponseDto<CompanyResponse> updateCompany(UUID companyId, CompanyRequest requestDto, String token) {
         Company existingCompany = companyRepository.findById(companyId)
@@ -94,7 +92,7 @@ public class CompanyService {
     // 업체 단건 조회
     @Transactional(readOnly = true)
     public ApiResponseDto<CompanyResponse> getCompanyById(UUID companyId) {
-        Company company = companyRepository.findByIdAndIsDeletedFalse(companyId)
+        Company company = companyRepository.findByCompanyIdAndIsDeletedFalse(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 업체 아이디"));
 
         return ApiResponseDto.success("업체 단건 조회 성공", new CompanyResponse(company));
@@ -110,7 +108,7 @@ public class CompanyService {
         return ApiResponseDto.success("허브 ID로 업체 조회 성공", response);
     }
 
-    //동적 검색 및 페이징 처리
+    // 동적 검색 및 페이징 처리
     @Transactional(readOnly = true)
     public ApiResponseDto<Page<CompanyResponse>> searchCompanies(String name, String type, String city, Pageable pageable) {
         BooleanExpression filter = buildFilter(name, type, city);

@@ -50,13 +50,13 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
     private Double expectedDistance;
 
     @Column
-    private String expectedTime;
+    private Double expectedTime;
 
     @Column
     private Double realDistance;
 
     @Column
-    private String realTime;
+    private Double realTime;
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean isDeleted;
@@ -70,7 +70,7 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
             double latitude,
             double longitude,
             Double expectedDistance,
-            String expectedTime
+            Double expectedTime
     ) {
         return DeliveryCompanyRouteRecord.builder()
                 .delivery(delivery)
@@ -90,7 +90,7 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
             DeliveryCompanyStatus currentStatus,
             Integer deliveryOrderSequence,
             Double realDistance,
-            String realTime) {
+            Double realTime) {
 
         if (deliveryManager != null) {
             this.deliveryManager = deliveryManager;
