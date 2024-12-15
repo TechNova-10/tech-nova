@@ -218,8 +218,8 @@ public class DeliveryService {
 
         DeliveryManager deliveryManager = null;
         if (request.getDeliveryManagerId() != null) {
-            deliveryManager = deliveryManagerRepository.findById(request.getDeliveryManagerId())
-                    .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
+            deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(request.getDeliveryManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
         }
 
         UUID updatedBy = getUserIdFromToken("");
@@ -255,6 +255,30 @@ public class DeliveryService {
     }
 
     @Transactional
+    public UUID updateCompanyRouteRecordDeliveryManager(UUID deliveryRouteId, UUID deliveryManagerId) {
+        DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        if (delivery.getCurrentStatus().equals(DeliveryStatus.DELIVERY_COMPLETED)) {
+            throw new IllegalArgumentException("완료된 배송은 배송 담당자를 변경할 수 없습니다.");
+        }
+
+        DeliveryManager deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(deliveryManagerId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+        if (!deliveryManager.getManagerRole().equals(DeliveryManagerRole.COMPANY_DELIVERY_MANAGER)) {
+            throw new IllegalArgumentException("허브 배송 담당자는 업체 배송에 배정할 수 없습니다.");
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateCompanyRouteRecordDeliveryManager(deliveryRouteId, deliveryManager, updatedBy);
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
     public UUID updateCompanyRouteRecord(UUID deliveryRouteId, DeliveryCompanyRouteRecordUpdateDto request) {
         DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
@@ -263,8 +287,8 @@ public class DeliveryService {
 
         DeliveryManager deliveryManager = null;
         if (request.getDeliveryManagerId() != null) {
-            deliveryManager = deliveryManagerRepository.findById(request.getDeliveryManagerId())
-                    .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
+            deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(request.getDeliveryManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
         }
 
         DeliveryCompanyStatus newStatus = null;
@@ -289,6 +313,30 @@ public class DeliveryService {
 
         UUID updatedBy = getUserIdFromToken("");
         delivery.updateCompanyRouteRecordState(deliveryRouteId, newStatus, updatedBy);
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
+    public UUID updateRouteRecordDeliveryManager(UUID deliveryRouteId, UUID deliveryManagerId) {
+        DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        if (delivery.getCurrentStatus().equals(DeliveryStatus.DELIVERY_COMPLETED)) {
+            throw new IllegalArgumentException("완료된 배송은 배송 담당자를 변경할 수 없습니다.");
+        }
+
+        DeliveryManager deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(deliveryManagerId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+        if (!deliveryManager.getManagerRole().equals(DeliveryManagerRole.HUB_DELIVERY_MANAGER)) {
+            throw new IllegalArgumentException("업체 배송 담당자는 허브 배송에 배정할 수 없습니다.");
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateRouteRecordDeliveryManager(deliveryRouteId, deliveryManager, updatedBy);
 
         return routeRecord.getId();
     }
