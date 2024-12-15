@@ -14,14 +14,14 @@ public class DeliveryCompanyRouteRecordUpdateDto {
     private String currentStatus;
     private Integer deliveryOrderSequence;
     private Double realDistance;
-    private String realTime;
+    private Double realTime;
 
     public static DeliveryCompanyRouteRecordUpdateDto create(
             UUID deliveryManagerId,
             String currentStatus,
             Integer deliveryOrderSequence,
             Double realDistance,
-            String realTime
+            Double realTime
     ) {
         return new DeliveryCompanyRouteRecordUpdateDto(
                 deliveryManagerId,
