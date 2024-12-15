@@ -3,6 +3,7 @@ package com.tech_nova.company.presentation.controller;
 import com.tech_nova.company.application.dto.CompanyRequest;
 import com.tech_nova.company.application.dto.CompanyResponse;
 import com.tech_nova.company.application.service.CompanyService;
+import com.tech_nova.company.presentation.dto.ApiResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,53 +24,60 @@ public class CompanyController {
 
     // 업체 생성
     @PostMapping
-    public ResponseEntity<CompanyResponse> createCompany(
+    public ResponseEntity<ApiResponseDto<Void>> createCompany(
             @RequestBody CompanyRequest requestDto,
             @RequestHeader("Authorization") String authorizationHeader) {
         String token = extractToken(authorizationHeader);
-        CompanyResponse response = companyService.createCompany(requestDto, token);
-        return ResponseEntity.ok(response); // 200 OK와 함께 생성된 업체 반환
+        ApiResponseDto<Void> response = companyService.createCompany(requestDto, token);
+        return ResponseEntity.ok(response);
     }
 
     // 업체 수정
     @PutMapping("/{companyId}")
-    public ResponseEntity<CompanyResponse> updateCompany(
+    public ResponseEntity<ApiResponseDto<CompanyResponse>> updateCompany(
             @PathVariable UUID companyId,
             @RequestBody CompanyRequest requestDto,
             @RequestHeader("Authorization") String authorizationHeader) {
         String token = extractToken(authorizationHeader);
-        CompanyResponse response = companyService.updateCompany(companyId, requestDto, token);
-        return ResponseEntity.ok(response); // 200 OK와 함께 수정된 업체 반환
+        ApiResponseDto<CompanyResponse> response = companyService.updateCompany(companyId, requestDto, token);
+        return ResponseEntity.ok(response);
     }
 
     // 업체 삭제 (논리적 삭제)
     @DeleteMapping("/{companyId}")
-    public ResponseEntity<Void> deleteCompany(
+    public ResponseEntity<ApiResponseDto<Void>> deleteCompany(
             @PathVariable UUID companyId,
             @RequestHeader("Authorization") String authorizationHeader) {
         String token = extractToken(authorizationHeader);
-        companyService.deleteCompany(companyId, token);
-        return ResponseEntity.noContent().build(); // 204 No Content 반환
+        ApiResponseDto<Void> response = companyService.deleteCompany(companyId, token);
+        return ResponseEntity.ok(response);
+    }
+
+    // 업체 단건 조회
+    @GetMapping("/{companyId}")
+    public ResponseEntity<ApiResponseDto<CompanyResponse>> getCompanyById(@PathVariable UUID companyId) {
+        ApiResponseDto<CompanyResponse> response = companyService.getCompanyById(companyId);
+        return ResponseEntity.ok(response);
     }
 
     // 허브 ID로 업체 조회
     @GetMapping("/hub/{hubId}")
-    public ResponseEntity<List<CompanyResponse>> getCompaniesByHubId(
+    public ResponseEntity<ApiResponseDto<List<CompanyResponse>>> getCompaniesByHubId(
             @PathVariable UUID hubId) {
-        List<CompanyResponse> responseList = companyService.getCompaniesByHubId(hubId);
-        return ResponseEntity.ok(responseList); // 200 OK와 함께 결과 반환
+        ApiResponseDto<List<CompanyResponse>> response = companyService.getCompaniesByHubId(hubId);
+        return ResponseEntity.ok(response);
     }
 
     // 검색 및 페이징 처리
     @GetMapping
-    public ResponseEntity<Page<CompanyResponse>> searchCompanies(
+    public ResponseEntity<ApiResponseDto<Page<CompanyResponse>>> searchCompanies(
             @RequestParam(required = false) String name, // 검색 조건: 이름
             @RequestParam(required = false) String type, // 검색 조건: 타입
             @RequestParam(required = false) String city, // 검색 조건: 도시
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable // 기본 페이지 크기 및 정렬 설정
     ) {
-        Page<CompanyResponse> responsePage = companyService.searchCompanies(name, type, city, pageable);
-        return ResponseEntity.ok(responsePage); // 200 OK와 함께 결과 반환
+        ApiResponseDto<Page<CompanyResponse>> response = companyService.searchCompanies(name, type, city, pageable);
+        return ResponseEntity.ok(response); // 200 OK와 함께 응답 반환
     }
 
     // Authorization 헤더에서 토큰 추출

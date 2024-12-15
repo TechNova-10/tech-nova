@@ -1,11 +1,14 @@
 package com.tech_nova.company.application.dto;
 
 import com.tech_nova.company.domain.model.CompanyType;
-import lombok.Data;
+import lombok.*;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CompanyRequest {
 
     private String name; // 업체명
