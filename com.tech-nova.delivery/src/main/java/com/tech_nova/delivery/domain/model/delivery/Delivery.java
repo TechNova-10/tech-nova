@@ -104,7 +104,7 @@ public class Delivery extends Timestamped {
             DeliveryManager deliveryManager,
             DeliveryHubStatus currentStatus,
             Double realDistance,
-            String realTime,
+            Double realTime,
             UUID updatedBy) {
         DeliveryRouteRecord routeRecord = routeRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
@@ -132,7 +132,7 @@ public class Delivery extends Timestamped {
             DeliveryCompanyStatus currentStatus,
             Integer deliveryOrderSequence,
             Double realDistance,
-            String realTime,
+            Double realTime,
             UUID updatedBy) {
         DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))

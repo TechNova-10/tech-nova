@@ -8,10 +8,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "p_company")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class Company extends AuditField {
 
     @Id
