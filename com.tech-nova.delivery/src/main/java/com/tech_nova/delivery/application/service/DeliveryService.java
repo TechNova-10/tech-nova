@@ -7,10 +7,7 @@ import com.tech_nova.delivery.application.dto.res.DeliveryRouteRecordResponse;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
-import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryRouteRecordRepository;
+import com.tech_nova.delivery.domain.repository.*;
 import com.tech_nova.delivery.domain.service.DeliveryManagerAssignmentService;
 import com.tech_nova.delivery.infrastructure.dto.CompanyResponse;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
@@ -19,7 +16,11 @@ import com.tech_nova.delivery.infrastructure.dto.MovementResponse;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
+import com.tech_nova.delivery.presentation.request.DeliverySearchRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ public class DeliveryService {
     private final DeliveryManagerRepository deliveryManagerRepository;
     private final DeliveryRouteRecordRepository deliveryRouteRecordRepository;
     private final DeliveryCompanyRouteRecordRepository deliveryCompanyRouteRecordRepository;
+    private final DeliveryRepositoryCustom deliveryRepositoryCustom;
 
     private final DeliveryManagerAssignmentService deliveryManagerAssignmentService;
 
@@ -449,6 +451,25 @@ public class DeliveryService {
         }
 
         return hubMovementDatas;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DeliveryResponse> getDeliverys(DeliverySearchRequest deliveryRouteSearchRequest, Pageable pageable) {
+
+        int pageSize =
+                (pageable.getPageSize() == 30
+                        || pageable.getPageSize() == 50)
+                        ? pageable.getPageSize() : 10;
+
+        Pageable customPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageSize,
+                pageable.getSort()
+        );
+
+        // TODO 권한 검증 추가
+        return deliveryRepositoryCustom.searchDelivery("MASTER", deliveryRouteSearchRequest, customPageable).map(DeliveryResponse::of);
+
     }
 
     private void validateRoleForHubAssignment(DeliveryManager deliveryManager) {
