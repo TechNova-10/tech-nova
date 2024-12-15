@@ -1,7 +1,7 @@
 package com.tech_nova.delivery.application.service;
 
-import com.tech_nova.delivery.HubData;
 import com.tech_nova.delivery.application.dto.DeliveryManagerDto;
+import com.tech_nova.delivery.application.dto.HubData;
 import com.tech_nova.delivery.application.dto.res.DeliveryManagerResponse;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -29,7 +29,9 @@ public class DeliveryManagerService {
             throw new IllegalArgumentException("해당 사용자는 이미 등록되어 있습니다.");
         }
 
-        validateHubExistence("", request.getAssignedHubId());
+        if (request.getManagerRole().equals("COMPANY_DELIVERY_MANAGER")) {
+            validateHubExistence("", request.getAssignedHubId());
+        }
 
         validateRoleAndHubAssignment(request);
 

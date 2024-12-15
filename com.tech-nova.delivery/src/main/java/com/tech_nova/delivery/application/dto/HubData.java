@@ -1,4 +1,4 @@
-package com.tech_nova.delivery;
+package com.tech_nova.delivery.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

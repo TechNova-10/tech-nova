@@ -13,6 +13,6 @@ public class HubMovementData {
     private UUID id;
     private UUID departureHubId;
     private UUID arrivalHubId;
-    private String timeTravel;
+    private Double timeTravel;
     private Double distance;
 }
