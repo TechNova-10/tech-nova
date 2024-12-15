@@ -3,25 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/TechNova.iml" filepath="$PROJECT_DIR$/.idea/TechNova.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/auth.iml" filepath="$PROJECT_DIR$/.idea/modules/auth.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/auth.main.iml" filepath="$PROJECT_DIR$/.idea/modules/auth.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/auth.test.iml" filepath="$PROJECT_DIR$/.idea/modules/auth.test.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.iml" filepath="$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.tech-nova.hub.main.iml" filepath="$PROJECT_DIR$/.idea/modules/com.tech-nova.hub.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.main.iml" filepath="$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.test.iml" filepath="$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.test.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.tech_nova.delivery.main.iml" filepath="$PROJECT_DIR$/.idea/modules/com.tech_nova.delivery.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/delivery.iml" filepath="$PROJECT_DIR$/.idea/modules/delivery.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/delivery.main.iml" filepath="$PROJECT_DIR$/.idea/modules/delivery.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/delivery.test.iml" filepath="$PROJECT_DIR$/.idea/modules/delivery.test.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gateway.iml" filepath="$PROJECT_DIR$/.idea/modules/gateway.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gateway.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gateway.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gateway.test.iml" filepath="$PROJECT_DIR$/.idea/modules/gateway.test.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/hub.iml" filepath="$PROJECT_DIR$/.idea/modules/hub.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/hub.main.iml" filepath="$PROJECT_DIR$/.idea/modules/hub.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/hub.test.iml" filepath="$PROJECT_DIR$/.idea/modules/hub.test.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/server.iml" filepath="$PROJECT_DIR$/.idea/modules/server.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/server.main.iml" filepath="$PROJECT_DIR$/.idea/modules/server.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/server.test.iml" filepath="$PROJECT_DIR$/.idea/modules/server.test.iml" />
     </modules>
   </component>
 </project>
