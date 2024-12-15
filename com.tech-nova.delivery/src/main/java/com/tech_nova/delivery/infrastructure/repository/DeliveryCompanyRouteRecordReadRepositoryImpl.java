@@ -1,4 +1,4 @@
-package com.tech_nova.delivery.infrastructure;
+package com.tech_nova.delivery.infrastructure.repository;
 
 import com.tech_nova.delivery.domain.model.delivery.DeliveryCompanyRouteRecord;
 import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;

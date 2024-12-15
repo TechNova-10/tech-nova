@@ -12,7 +12,7 @@ public class DeliveryRouteUpdateRequest {
     private UUID deliveryManagerId;
     private String currentStatus;
     private Double realDistance;
-    private String realTime;
+    private Double realTime;
 
     public DeliveryRouteRecordUpdateDto toDTO() {
         return DeliveryRouteRecordUpdateDto.create(

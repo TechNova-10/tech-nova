@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface DeliveryCompanyRouteRecordRepository {
     Optional<DeliveryCompanyRouteRecord> findById(UUID id);
 
+    Optional<DeliveryCompanyRouteRecord> findByIdAndIsDeletedFalse(UUID id);
+
     boolean existsByDeliveryIdAndIsDeletedFalse(UUID deliveryId);
 
     DeliveryCompanyRouteRecord findByDeliveryIdAndIsDeletedFalse(UUID deliveryId);

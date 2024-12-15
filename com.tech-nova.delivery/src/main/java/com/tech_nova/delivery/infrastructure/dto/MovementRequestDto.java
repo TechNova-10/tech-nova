@@ -1,18 +1,17 @@
-package com.tech_nova.delivery.application.dto;
+package com.tech_nova.delivery.infrastructure.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Getter
-@AllArgsConstructor
+@Setter
 @NoArgsConstructor
-public class HubMovementData {
-    private UUID id;
+@AllArgsConstructor
+public class MovementRequestDto {
     private UUID departureHubId;
     private UUID arrivalHubId;
-    private Double timeTravel;
-    private Double distance;
 }
