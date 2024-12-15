@@ -11,6 +11,10 @@ import com.tech_nova.hub.presentation.exception.RoleNotAllowedException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +24,16 @@ public class HubService {
 
   private final HubRepository hubRepository;
 
+  @CachePut(cacheNames = "HubCache", key = "#result.hubId")
   @Transactional
-  public void createHub(HubRequestDto hubRequestDto, UUID userId, String role) {
+  public HubResponseDto createHub(HubRequestDto hubRequestDto, UUID userId, String role) {
 
     validateMasterRole(role);
-    hubRepository.save(Hub.createHub(hubRequestDto, userId));
+
+    Hub hub = Hub.createHub(hubRequestDto, userId);
+    hubRepository.save(hub);
+
+    return HubResponseDto.of(hub);
   }
 
   @Transactional(readOnly = true)
@@ -39,13 +48,22 @@ public class HubService {
     return HubResponseDto.of(hub);
   }
 
+  @Caching(
+      put = @CachePut(cacheNames = "HubCache", key = "#hubId"),
+      evict = @CacheEvict(cacheNames = "HubAllCache", allEntries = true)
+  )
   @Transactional
-  public void updateHub(UUID hubId, HubRequestDto hubRequestDto, UUID userId, String role) {
+  public HubResponseDto updateHub(UUID hubId, HubRequestDto hubRequestDto, UUID userId, String role) {
 
     validateMasterRole(role);
-    findHubById(hubId).updateHub(hubRequestDto, userId);
+
+    Hub hub = findHubById(hubId);
+    hub.updateHub(hubRequestDto, userId);
+
+    return HubResponseDto.of(hub);
   }
 
+  @CacheEvict(cacheNames = {"HubCache", "HubAllCache"}, allEntries = true)
   @Transactional
   public void deleteHub(UUID hubId, UUID userId, String role) {
 
@@ -53,6 +71,7 @@ public class HubService {
     findHubById(hubId).deleteHub(userId);
   }
 
+  @Cacheable(cacheNames = "HubAllCache", key = "methodName")
   @Transactional(readOnly = true)
   public List<HubClientResponseDto> getHubList() {
     return hubRepository.findAll()

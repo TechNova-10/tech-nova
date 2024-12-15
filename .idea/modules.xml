@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/TechNova.iml" filepath="$PROJECT_DIR$/.idea/TechNova.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.main.iml" filepath="$PROJECT_DIR$/.idea/modules/com.tech-nova.movementInfo.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/delivery.main.iml" filepath="$PROJECT_DIR$/.idea/modules/delivery.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/hub.main.iml" filepath="$PROJECT_DIR$/.idea/modules/hub.main.iml" />
     </modules>
   </component>
 </project>
