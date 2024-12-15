@@ -8,6 +8,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,6 +49,22 @@ public class MovementController {
             .code(200)
             .message("허브간 이동 정보 단일 조회 완료")
             .data(movementService.getMovement(movementId))
+            .build(),
+        HttpStatus.OK
+    );
+  }
+
+  @DeleteMapping("/{movementId}")
+  public ResponseEntity<ApiResponseDto<Void>> deleteHub(
+      @PathVariable UUID movementId,
+      @RequestHeader(value = "user_id", required = true) UUID userId,
+      @RequestHeader(value = "role", required = true) String role
+  ) {
+    movementService.deleteMovement(movementId, userId, role);
+    return new ResponseEntity<>(
+        ApiResponseDto.<Void>builder()
+            .code(204)
+            .message("허브간 이동 정보 삭제 완료")
             .build(),
         HttpStatus.OK
     );

@@ -86,4 +86,10 @@ public class Movement {
         .updatedBy(userId)
         .build();
   }
+
+  public void deleteMovement(UUID userId) {
+    this.isDeleted = true;
+    this.deleted_at = LocalDateTime.now();
+    this.deleted_By = userId;
+  }
 }
