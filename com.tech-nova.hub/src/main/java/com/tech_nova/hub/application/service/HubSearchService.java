@@ -2,37 +2,19 @@ package com.tech_nova.hub.application.service;
 
 import com.tech_nova.hub.application.dtos.req.HubSearchDto;
 import com.tech_nova.hub.application.dtos.res.HubResponseDto;
-import com.tech_nova.hub.infrastructure.repository.HubRepositoryCustom;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@RequiredArgsConstructor
-public class HubSearchService {
+public interface HubSearchService {
 
-  private final HubRepositoryCustom hubRepositoryCustom;
-
-  @Transactional(readOnly = true)
-  public Page<HubResponseDto> getHubs(String role, HubSearchDto hubSearchDto, Pageable pageable) {
-
-    int pageSize =
-        (pageable.getPageSize() == 30
-            || pageable.getPageSize() == 50)
-            ? pageable.getPageSize() : 10;
-
-    Pageable customPageable = PageRequest.of(
-        pageable.getPageNumber(),
-        pageSize,
-        pageable.getSort()
-    );
-
-    Page<HubResponseDto> response =
-        hubRepositoryCustom.searchHubs(role, hubSearchDto, customPageable).map(HubResponseDto::of);
-
-    return response;
-  }
+  /**
+   * 허브 search 메서드
+   *
+   * @param role 사용자 권한
+   * @param hubSearchDto 허브 검색 조건을 담고 있는 DTO
+   * @param pageable 페이지 정보 (페이지 번호, 크기, 정렬 정보 등)
+   * @return 검색된 허브 목록에 대한 페이지 응답 DTO
+   */
+  Page<HubResponseDto> getHubs(String role, HubSearchDto hubSearchDto, Pageable pageable);
 }
