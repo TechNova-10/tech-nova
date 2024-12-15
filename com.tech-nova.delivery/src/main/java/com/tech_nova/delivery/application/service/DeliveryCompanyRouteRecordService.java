@@ -45,7 +45,6 @@ public class DeliveryCompanyRouteRecordService {
             for (DeliveryCompanyRouteRecord record : records) {
                 String city = record.getCity();
                 String roadName = record.getRoadName();
-                System.out.println(city + " " + roadName);
 
                 locationDataMonoList.add(Mono.fromCallable(() -> fetchCoordinates(city + " " + roadName)));
             }
@@ -72,7 +71,6 @@ public class DeliveryCompanyRouteRecordService {
 
         String response = googleApiService.generateContent(requestBody);
 
-        System.out.println("response: " + response);
         return parseOptimizedOrder(response);
     }
 
