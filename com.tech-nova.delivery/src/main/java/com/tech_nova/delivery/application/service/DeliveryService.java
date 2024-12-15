@@ -33,7 +33,8 @@ public class DeliveryService {
     private final CompanyService companyService;
     private final HubService hubService;
     private final HubMovementService hubMovementService;
-    private final MapService mapService;
+    private final GeocodingApiService geocodingApiService;
+    private final DirectionsApiService directionsApiService;
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryManagerRepository deliveryManagerRepository;
@@ -376,8 +377,19 @@ public class DeliveryService {
         if (intermediateHubId.equals(arrivalHubId)) {
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, arrivalHubId, movementResponse.getTimeTravel(), movementResponse.getDistance()));
         } else {
-            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, intermediateHubId, 160.0, 100.0));
-            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), intermediateHubId, arrivalHubId, 160.0, 200.0));
+            // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
+            HubData departureHub = hubService.getHub(departureHubId, "MASTER").getData();
+            HubData intermediateHub = hubService.getHub(departureHubId, "MASTER").getData();
+            HubData arrivalHub = hubService.getHub(departureHubId, "MASTER").getData();
+
+            String departureEstimate = departureHub.getLongitude() + "," + departureHub.getLatitude();
+            String intermediateEstimate = intermediateHub.getLongitude() + "," + intermediateHub.getLatitude();
+            String arrivalEstimate = arrivalHub.getLongitude() + "," + arrivalHub.getLatitude();
+
+            RouteEstimateData routeEstimateData1 = getchRouteEstimate(departureEstimate, intermediateEstimate);
+            RouteEstimateData routeEstimateData2 = getchRouteEstimate(intermediateEstimate, arrivalEstimate);
+            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, intermediateHubId, (double) routeEstimateData1.getDuration(), (double) routeEstimateData1.getDistance()));
+            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), intermediateHubId, arrivalHubId, (double) routeEstimateData2.getDuration(), (double) routeEstimateData2.getDistance()));
         }
 
         return hubMovementDatas;
@@ -442,7 +454,11 @@ public class DeliveryService {
     }
 
     public LocationData fetchCoordinates(String address) {
-        return mapService.getCoordinates(address);
+        return geocodingApiService.getCoordinates(address);
+    }
+
+    public RouteEstimateData getchRouteEstimate(String start, String goal) {
+        return directionsApiService.getRouteEstimateData(start, goal);
     }
 
     // TODO: 추후 인증 완성 시 토큰 내 정보로 ID 가져올 예정
