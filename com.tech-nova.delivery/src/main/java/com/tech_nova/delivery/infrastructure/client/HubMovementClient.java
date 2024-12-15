@@ -2,6 +2,7 @@ package com.tech_nova.delivery.infrastructure.client;
 
 import com.tech_nova.delivery.application.service.HubMovementService;
 import com.tech_nova.delivery.infrastructure.dto.MovementRequestDto;
+import com.tech_nova.delivery.infrastructure.dto.MovementResponse;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,5 +14,5 @@ import java.util.UUID;
 @FeignClient(name = "movement-service", url = "http://auth-service/api/v1/movements")
 public interface HubMovementClient extends HubMovementService {
     @PostMapping
-    ApiResponseDto<Void> createMovement(@RequestBody MovementRequestDto movementRequestDto, @RequestHeader(value = "user_id", required = true) UUID userId, @RequestHeader(value = "role", required = true) String role);
+    ApiResponseDto<MovementResponse> createMovement(@RequestBody MovementRequestDto movementRequestDto, @RequestHeader(value = "user_id", required = true) UUID userId, @RequestHeader(value = "role", required = true) String role);
 }
