@@ -1,6 +1,7 @@
 package com.tech_nova.delivery.presentation.controller;
 
 import com.tech_nova.delivery.application.dto.res.DeliveryCompanyRouteRecordResponse;
+import com.tech_nova.delivery.application.service.DeliveryCompanyRouteRecordService;
 import com.tech_nova.delivery.application.service.DeliveryService;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.request.DeliveryCompanyRouteUpdateRequest;
@@ -16,6 +17,7 @@ import java.util.UUID;
 public class DeliveryCompanyRouteRecordController {
 
     private final DeliveryService deliveryService;
+    private final DeliveryCompanyRouteRecordService deliveryCompanyRouteRecordService;
 
     @PostMapping
     public ResponseEntity<ApiResponseDto<Void>> createCompanyRouteRecord(@RequestParam("delivery_id") UUID deliveryId) {
@@ -52,4 +54,19 @@ public class DeliveryCompanyRouteRecordController {
         deliveryService.deleteCompanyRouteRecord(deliveryRouteId);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery route deleted successfully"));
     }
+
+    // @GetMapping
+    // public ResponseEntity<ApiResponseDto<List<DeliveryCompanyRouteRecordResponse>>> getAllCompanyRouteRecords() {
+    //     List<DeliveryCompanyRouteRecordResponse> routeRecords = deliveryCompanyRouteRecordService.getDeliveryCompanyList();
+    //
+    //     return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records fetched successfully", routeRecords));
+    // }
+
+    @PatchMapping("/order-sequence")
+    public ResponseEntity<ApiResponseDto<Void>> setOrderSequence() {
+        deliveryCompanyRouteRecordService.setOrderSequence();
+
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records fetched successfully"));
+    }
+
 }

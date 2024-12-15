@@ -135,13 +135,17 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
         LocalDateTime currentTime = LocalDateTime.now();
 
         long differenceInMillis = ChronoUnit.MILLIS.between(updateAt, currentTime);
-        
+
         this.realDistance = this.expectedDistance;
         this.realTime = (double) differenceInMillis;
     }
 
     public void updateDeliveryManager(DeliveryManager deliveryManager) {
         this.deliveryManager = deliveryManager;
+    }
+
+    public void updateDeliveryOrderSequence(int sequence) {
+        this.deliveryOrderSequence = sequence;
     }
 
     public void markAsUpdated(UUID updatedBy) {
