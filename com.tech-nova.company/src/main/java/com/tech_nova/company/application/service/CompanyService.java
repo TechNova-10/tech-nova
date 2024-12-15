@@ -51,7 +51,6 @@ public class CompanyService {
         return ApiResponseDto.success("업체 생성 성공", null);
     }
 
-
     @Transactional
     public ApiResponseDto<CompanyResponse> updateCompany(UUID companyId, CompanyRequest requestDto, String token) {
         Company existingCompany = companyRepository.findById(companyId)
