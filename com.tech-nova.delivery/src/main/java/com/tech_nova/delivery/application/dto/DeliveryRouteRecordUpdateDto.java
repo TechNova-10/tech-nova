@@ -13,13 +13,13 @@ public class DeliveryRouteRecordUpdateDto {
     private UUID deliveryManagerId;
     private String currentStatus;
     private Double realDistance;
-    private String realTime;
+    private Double realTime;
 
     public static DeliveryRouteRecordUpdateDto create(
             UUID deliveryManagerId,
             String currentStatus,
             Double realDistance,
-            String realTime
+            Double realTime
     ) {
         return new DeliveryRouteRecordUpdateDto(
                 deliveryManagerId,
