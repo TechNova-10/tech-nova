@@ -44,7 +44,6 @@ public class GeocodingApiClient implements GeocodingApiService {
                     .retrieve()
                     .bodyToMono(GeocodingApiResponse.class)
                     .map(response -> {
-                        System.out.println(response);
                         if (!response.getAddresses().isEmpty()) {
                             var addressData = response.getAddresses().get(0);
                             double x = Double.parseDouble(addressData.getX());
