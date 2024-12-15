@@ -48,9 +48,7 @@ public class DeliveryService {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
 
-        // 요청 업체 ID
         UUID recipientCompanyId = request.getRecipientCompanyId();
-        // CompanyService로 업체 정보 조회후 소속 허브 아이디 가져와 출발 허브로 지정
         CompanyResponse recipientCompany = companyService.getCompanyById(recipientCompanyId).getData();
         UUID departureHubId = recipientCompany.getHubId();
         UUID arrivalHubId = validateHubExistence(request.getProvince(), request.getCity());
@@ -373,20 +371,14 @@ public class DeliveryService {
         UUID intermediateHubId = movementResponse.getIntermediateHubId();
         UUID arrivalHubId = movementResponse.getArrivalHubId();
 
-        System.out.println("departureHubId: " + departureHubId);
-        System.out.println("intermediateHubId: " + intermediateHubId);
-        System.out.println("arrivalHubId: " + arrivalHubId);
-
         List<HubMovementData> hubMovementDatas = new ArrayList<>();
 
-        if (departureHubId.equals(intermediateHubId)) {
+        if (intermediateHubId.equals(arrivalHubId)) {
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, arrivalHubId, movementResponse.getTimeTravel(), movementResponse.getDistance()));
         } else {
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, intermediateHubId, 160.0, 100.0));
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), intermediateHubId, arrivalHubId, 160.0, 200.0));
         }
-
-        System.out.println("hubMovementDatas size: " + hubMovementDatas.size());
 
         return hubMovementDatas;
     }
