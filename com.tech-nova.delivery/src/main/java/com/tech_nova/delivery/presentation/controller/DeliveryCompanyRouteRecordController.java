@@ -65,7 +65,7 @@ public class DeliveryCompanyRouteRecordController {
     ) {
         Page<DeliveryCompanyRouteRecordResponse> routeRecords = deliveryCompanyRouteRecordService.getDeliveryCompanyRouteRecords(deliveryRouteSearchRequest, pageable);
 
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records fetched successfully", routeRecords));
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records retrieved successfully", routeRecords));
     }
 
     // TODO 테스트 끝나면 삭제 에정. 이 기능은 스케줄로 자동 실행되기 때문.
