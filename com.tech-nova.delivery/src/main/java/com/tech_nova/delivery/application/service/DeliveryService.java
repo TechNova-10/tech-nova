@@ -328,20 +328,27 @@ public class DeliveryService {
 
         String city = delivery.getCity();
         String roadName = delivery.getRoadName();
-        String fullAddress = city + " " + roadName;
-        LocationData coordinates = fetchCoordinates(fullAddress);
+        LocationData coordinates = fetchCoordinates(city + " " + roadName);
 
-        // 마지막 허브 -> 업체의 예상 거리, 시간 계산 필요
+        HubData departureHub = hubService.getHub(delivery.getArrivalHubId(), "MASTER").getData();
+
+        String departureEstimate = departureHub.getLongitude() + "," + departureHub.getLatitude();
+        String arrivalEstimate = coordinates.getLongitude() + "," + coordinates.getLatitude();
+        RouteEstimateData routeEstimateData = fetchRouteEstimate(departureEstimate, arrivalEstimate);
+
         DeliveryCompanyRouteRecord companyRouteRecord = DeliveryCompanyRouteRecord.create(
                 delivery,
                 deliveryManager,
                 delivery.getArrivalHubId(),
                 delivery.getRecipientCompanyId(),
+                delivery.getProvince(),
+                delivery.getCity(),
+                delivery.getDistrict(),
+                delivery.getRoadName(),
+                delivery.getDetailAddress(),
                 DeliveryCompanyStatus.COMPANY_WAITING,
-                coordinates.getLatitude(),
-                coordinates.getLongitude(),
-                (double) 0,
-                (double) 0
+                (double) routeEstimateData.getDuration(),
+                (double) routeEstimateData.getDistance()
         );
 
         delivery.addCompanyRouteRecord(companyRouteRecord);
@@ -379,15 +386,16 @@ public class DeliveryService {
         } else {
             // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
             HubData departureHub = hubService.getHub(departureHubId, "MASTER").getData();
-            HubData intermediateHub = hubService.getHub(departureHubId, "MASTER").getData();
-            HubData arrivalHub = hubService.getHub(departureHubId, "MASTER").getData();
+            HubData intermediateHub = hubService.getHub(intermediateHubId, "MASTER").getData();
+            HubData arrivalHub = hubService.getHub(arrivalHubId, "MASTER").getData();
 
             String departureEstimate = departureHub.getLongitude() + "," + departureHub.getLatitude();
             String intermediateEstimate = intermediateHub.getLongitude() + "," + intermediateHub.getLatitude();
             String arrivalEstimate = arrivalHub.getLongitude() + "," + arrivalHub.getLatitude();
 
-            RouteEstimateData routeEstimateData1 = getchRouteEstimate(departureEstimate, intermediateEstimate);
-            RouteEstimateData routeEstimateData2 = getchRouteEstimate(intermediateEstimate, arrivalEstimate);
+            RouteEstimateData routeEstimateData1 = fetchRouteEstimate(departureEstimate, intermediateEstimate);
+            RouteEstimateData routeEstimateData2 = fetchRouteEstimate(intermediateEstimate, arrivalEstimate);
+
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, intermediateHubId, (double) routeEstimateData1.getDuration(), (double) routeEstimateData1.getDistance()));
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), intermediateHubId, arrivalHubId, (double) routeEstimateData2.getDuration(), (double) routeEstimateData2.getDistance()));
         }
@@ -457,7 +465,7 @@ public class DeliveryService {
         return geocodingApiService.getCoordinates(address);
     }
 
-    public RouteEstimateData getchRouteEstimate(String start, String goal) {
+    public RouteEstimateData fetchRouteEstimate(String start, String goal) {
         return directionsApiService.getRouteEstimateData(start, goal);
     }
 
@@ -541,9 +549,9 @@ public class DeliveryService {
             };
 
             if (Arrays.asList(gyeonggiNorthCities).contains(city)) {
-                hubSearchDto.setName("경기 북부 센터");
+                hubSearchDto.setName("경기도 북부 센터");
             } else if (Arrays.asList(gyeonggiSouthCities).contains(city)) {
-                hubSearchDto.setName("경기 남부 센터");
+                hubSearchDto.setName("경기도 남부 센터");
             } else {
                 hubSearchDto.setProvince("경기도");
             }
