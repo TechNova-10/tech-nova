@@ -4,10 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tech_nova.delivery.application.dto.LocationData;
 import com.tech_nova.delivery.application.dto.RouteEstimateData;
+import com.tech_nova.delivery.application.dto.res.DeliveryCompanyRouteRecordResponse;
 import com.tech_nova.delivery.domain.model.delivery.Delivery;
 import com.tech_nova.delivery.domain.model.delivery.DeliveryCompanyRouteRecord;
 import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;
+import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepositoryCustom;
+import com.tech_nova.delivery.presentation.request.DeliveryRouteSearchRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -28,6 +34,7 @@ public class DeliveryCompanyRouteRecordService {
     private final GoogleApiService googleApiService;
 
     private final DeliveryCompanyRouteRecordRepository deliveryCompanyRouteRecordRepository;
+    private final DeliveryCompanyRouteRecordRepositoryCustom deliveryCompanyRouteRecordRepositoryCustom;
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * ?")
@@ -204,6 +211,25 @@ public class DeliveryCompanyRouteRecordService {
             slackMessage.append("\n");
         }
         return slackMessage;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DeliveryCompanyRouteRecordResponse> getDeliveryCompanyRouteRecords(DeliveryRouteSearchRequest deliveryRouteSearchRequest, Pageable pageable) {
+
+        int pageSize =
+                (pageable.getPageSize() == 30
+                        || pageable.getPageSize() == 50)
+                        ? pageable.getPageSize() : 10;
+
+        Pageable customPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageSize,
+                pageable.getSort()
+        );
+
+        // TODO 권한 검증 추가
+        return deliveryCompanyRouteRecordRepositoryCustom.searchDeliveryCompanyRouteRecords("MASTER", deliveryRouteSearchRequest, customPageable).map(DeliveryCompanyRouteRecordResponse::of);
+
     }
 
     private boolean validateMaster(String token, Delivery delivery) {
