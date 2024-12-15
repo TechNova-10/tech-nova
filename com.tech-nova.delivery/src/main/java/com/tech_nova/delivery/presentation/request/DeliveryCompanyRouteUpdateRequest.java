@@ -13,7 +13,7 @@ public class DeliveryCompanyRouteUpdateRequest {
     private String currentStatus;
     private Integer deliveryOrderSequence;
     private Double realDistance;
-    private String realTime;
+    private Double realTime;
 
     public DeliveryCompanyRouteRecordUpdateDto toDTO() {
         return DeliveryCompanyRouteRecordUpdateDto.create(

@@ -13,6 +13,6 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, Queryds
     // 허브 ID에 속하는 업체만 조회
     List<Company> findAllByHubIdAndIsDeletedFalse(UUID hubId);
 
-    Optional<Company> findByIdAndIsDeletedFalse(UUID companyId);
+    Optional<Company> findByCompanyIdAndIsDeletedFalse(UUID companyId);
 
 }

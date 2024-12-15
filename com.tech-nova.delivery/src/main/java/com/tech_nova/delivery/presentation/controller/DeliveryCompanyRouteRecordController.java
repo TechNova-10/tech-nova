@@ -1,5 +1,6 @@
 package com.tech_nova.delivery.presentation.controller;
 
+import com.tech_nova.delivery.application.dto.res.DeliveryCompanyRouteRecordResponse;
 import com.tech_nova.delivery.application.service.DeliveryService;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.request.DeliveryCompanyRouteUpdateRequest;
@@ -20,6 +21,12 @@ public class DeliveryCompanyRouteRecordController {
     public ResponseEntity<ApiResponseDto<Void>> createCompanyRouteRecord(@RequestParam("delivery_id") UUID deliveryId) {
         deliveryService.createCompanyRouteRecordByDeliveryId(deliveryId);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery route status created successfully"));
+    }
+
+    @GetMapping("/{delivery_route_id}")
+    public ResponseEntity<ApiResponseDto<DeliveryCompanyRouteRecordResponse>> getDelivery(@PathVariable("delivery_route_id") UUID deliveryRouteId) {
+        DeliveryCompanyRouteRecordResponse routeRecord = deliveryService.getDeliveryCompanyRouteRecord(deliveryRouteId);
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", routeRecord));
     }
 
     @PatchMapping("/{delivery_route_id}")

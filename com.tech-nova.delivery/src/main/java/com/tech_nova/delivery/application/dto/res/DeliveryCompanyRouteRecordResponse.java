@@ -19,9 +19,9 @@ public class DeliveryCompanyRouteRecordResponse {
     private DeliveryCompanyStatus currentStatus;
     private Integer deliveryOrderSequence;
     private Double expectedDistance;
-    private String exceptedTime;
+    private Double exceptedTime;
     private Double realDistance;
-    private String realTime;
+    private Double realTime;
 
     public static DeliveryCompanyRouteRecordResponse of(DeliveryCompanyRouteRecord routeRecord) {
         return DeliveryCompanyRouteRecordResponse.builder()
