@@ -35,7 +35,7 @@ public class Hub {
   @Column(name = "hub_manager_id", nullable = false)
   private UUID hubManagerId;
 
-  @Column(name = "name", nullable = false)
+  @Column(name = "name", nullable = false, unique = true)
   private String name;
 
   @Column(name = "province", nullable = false)
