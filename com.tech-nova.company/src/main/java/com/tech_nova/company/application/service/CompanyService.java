@@ -1,6 +1,7 @@
 package com.tech_nova.company.application.service;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.tech_nova.company.application.dto.HubResponse;
 import com.tech_nova.company.domain.model.QCompany;
 import com.tech_nova.company.infrastructure.client.AuthServiceClient;
 import com.tech_nova.company.infrastructure.client.HubServiceClient;
@@ -10,9 +11,13 @@ import com.tech_nova.company.domain.model.Company;
 import com.tech_nova.company.domain.model.CompanyType;
 import com.tech_nova.company.domain.repository.CompanyRepository;
 import com.tech_nova.company.presentation.dto.ApiResponseDto;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,7 +55,6 @@ public class CompanyService {
 
         return ApiResponseDto.success("업체 생성 성공", null);
     }
-
 
 
     @Transactional
@@ -153,6 +157,15 @@ public class CompanyService {
             throw new IllegalArgumentException("유효하지 않은 hubId!");
         }
     }
+//    private void validateHubId(UUID hubId) {
+//        try {
+//            ResponseEntity<ApiResponseDto<HubResponse>> response = hubServiceClient.getHub(hubId);
+//            response.getBody();
+//        } catch (Exception e) {
+//            throw new IllegalArgumentException("유효하지 않은 hubId!", e);
+//        }
+//    }
+
 
 //    private void validateUpdatePermission(Company existingCompany, CompanyRequest requestDto, String token) {
 //        String userRole = authServiceClient.getUserRole(token);
@@ -174,6 +187,7 @@ public class CompanyService {
 //        }
 //    }
 
+
     private void validateHubManager(String token, UUID hubId) {
         String userRole = authServiceClient.getUserRole(token);
         if ("MASTER".equals(userRole)) {
@@ -186,3 +200,4 @@ public class CompanyService {
         }
     }
 }
+
