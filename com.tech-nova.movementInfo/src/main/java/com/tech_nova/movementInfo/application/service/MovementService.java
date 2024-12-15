@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,7 @@ public class MovementService {
     regionAdjacency.put("대구광역시 센터", List.of("경북 센터", "대구광역시 센터", "경남 센터", "부산광역시 센터", "울산광역시 센터"));
   }
 
+  @CachePut(cacheNames = "movementCache", key = "#result.movementInfoId")
   @Transactional
   public MovementResponseDto createMovement(MovementRequestDto movementRequestDto, UUID userId,
       String role) {
@@ -75,6 +79,7 @@ public class MovementService {
     return MovementResponseDto.of(movement);
   }
 
+  @Cacheable(cacheNames = "movementCache", key = "methodName")
   @Transactional(readOnly = true)
   public MovementResponseDto getMovement(UUID movementId) {
 
@@ -84,6 +89,7 @@ public class MovementService {
     return MovementResponseDto.of(movement);
   }
 
+  @CacheEvict(cacheNames = "movementCache", allEntries = true)
   @Transactional
   public void deleteMovement(UUID movementId, UUID userId, String role) {
 
