@@ -5,7 +5,10 @@ import com.tech_nova.delivery.application.service.DeliveryCompanyRouteRecordServ
 import com.tech_nova.delivery.application.service.DeliveryService;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.request.DeliveryCompanyRouteUpdateRequest;
+import com.tech_nova.delivery.presentation.request.DeliveryRouteSearchRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,12 +58,15 @@ public class DeliveryCompanyRouteRecordController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery route deleted successfully"));
     }
 
-    // @GetMapping
-    // public ResponseEntity<ApiResponseDto<List<DeliveryCompanyRouteRecordResponse>>> getAllCompanyRouteRecords() {
-    //     List<DeliveryCompanyRouteRecordResponse> routeRecords = deliveryCompanyRouteRecordService.getDeliveryCompanyList();
-    //
-    //     return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records fetched successfully", routeRecords));
-    // }
+    @GetMapping
+    public ResponseEntity<ApiResponseDto<Page<DeliveryCompanyRouteRecordResponse>>> getAllCompanyRouteRecords(
+            DeliveryRouteSearchRequest deliveryRouteSearchRequest,
+            Pageable pageable
+    ) {
+        Page<DeliveryCompanyRouteRecordResponse> routeRecords = deliveryCompanyRouteRecordService.getDeliveryCompanyRouteRecords(deliveryRouteSearchRequest, pageable);
+
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records fetched successfully", routeRecords));
+    }
 
     // TODO 테스트 끝나면 삭제 에정. 이 기능은 스케줄로 자동 실행되기 때문.
     @PatchMapping("/order-sequence")
