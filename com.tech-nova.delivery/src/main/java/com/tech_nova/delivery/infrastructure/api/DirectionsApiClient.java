@@ -44,7 +44,6 @@ public class DirectionsApiClient implements DirectionsApiService {
                     .retrieve()
                     .bodyToMono(NaverApiResponse.class)
                     .map(response -> {
-                        System.out.println(response);
                         if (response != null && response.getRoute() != null &&
                                 !response.getRoute().getTraoptimal().isEmpty()) {
                             var traoptimal = response.getRoute().getTraoptimal().get(0);
