@@ -3,11 +3,10 @@ package com.tech_nova.delivery.application.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tech_nova.delivery.application.dto.LocationData;
+import com.tech_nova.delivery.application.dto.RouteEstimateData;
 import com.tech_nova.delivery.domain.model.delivery.Delivery;
 import com.tech_nova.delivery.domain.model.delivery.DeliveryCompanyRouteRecord;
 import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +24,7 @@ public class DeliveryCompanyRouteRecordService {
     private final DirectionsApiService directionsApiService;
     private final GoogleApiService googleApiService;
 
-    private final DeliveryRepository deliveryRepository;
     private final DeliveryCompanyRouteRecordRepository deliveryCompanyRouteRecordRepository;
-    private final DeliveryManagerRepository deliveryManagerRepository;
 
     @Transactional
     public void setOrderSequence() {
@@ -57,8 +54,31 @@ public class DeliveryCompanyRouteRecordService {
                                 .collect(Collectors.toList());
 
                         List<Integer> optimizedOrder = getWaypointsOrder(locationDatas);
-                        updateDeliveryRouteOrder(records, optimizedOrder);
+                        StringBuilder slackMessage = updateDeliveryRouteOrder(records, optimizedOrder);
 
+                        String[] startAndGoal = getCoordinatesForOrderOneAndLast(locationDatas, optimizedOrder);
+                        String start = startAndGoal[0];
+                        String goal = startAndGoal[1];
+                        String waypoints = "";
+
+                        RouteEstimateData routeEstimateData;
+
+                        if (locationDatas.size() > 2) {
+                            waypoints = generateIntermediateWaypoints(locationDatas, optimizedOrder);
+                            routeEstimateData = directionsApiService.getRouteEstimateData(start, goal, waypoints);
+                        } else {
+                            routeEstimateData = directionsApiService.getRouteEstimateData(start, goal);
+                        }
+
+                        long distanceInMeters = routeEstimateData.getDistance();
+                        double distanceInKilometers = distanceInMeters / 1000.0;
+
+                        long durationInMillis = routeEstimateData.getDuration();
+                        long durationInMinutes = durationInMillis / 60000;
+
+                        slackMessage.append("예상 거리: ").append(String.format("%.2f", distanceInKilometers)).append(" km, 예상 시간: ").append(durationInMinutes).append(" 분");
+
+                        // TODO 슬랙메시지 발송
                     })
                     .subscribe();
         }
@@ -100,48 +120,86 @@ public class DeliveryCompanyRouteRecordService {
         }
     }
 
+    private String[] getCoordinatesForOrderOneAndLast(List<LocationData> locationDatas, List<Integer> optimizedOrder) {
+        String[] coordinates = new String[2];
 
-    private static String getString(List<LocationData> locationDatas) {
+        int orderOneIndex = optimizedOrder.indexOf(1);
+        if (orderOneIndex != -1 && orderOneIndex < locationDatas.size()) {
+            LocationData location = locationDatas.get(orderOneIndex);
+            coordinates[0] = location.getLongitude() + "," + location.getLatitude();
+        } else {
+            coordinates[0] = "";
+        }
+
+        int orderLastIndex = optimizedOrder.indexOf(optimizedOrder.size());
+        if (orderLastIndex != -1 && orderLastIndex < locationDatas.size()) {
+            LocationData location = locationDatas.get(orderLastIndex);
+            coordinates[1] = location.getLongitude() + "," + location.getLatitude();
+        } else {
+            coordinates[1] = "";
+        }
+
+        return coordinates;
+    }
+
+    private static String generateIntermediateWaypoints(List<LocationData> locationDatas, List<Integer> optimizedOrder) {
         StringBuilder waypoints = new StringBuilder();
 
-        if (locationDatas.size() > 2) {
-            for (int i = 1; i < locationDatas.size() - 1; i++) {
-                LocationData current = locationDatas.get(i);
-                String waypoint = current.getLongitude() + "," + current.getLatitude();
+        Set<Integer> excludedIndexes = new HashSet<>();
+        int orderOneIndex = optimizedOrder.indexOf(1);
+        int orderLastIndex = optimizedOrder.indexOf(optimizedOrder.size());
 
-                if (i < locationDatas.size() - 1 && current.equals(locationDatas.get(i + 1))) {
-                    waypoint = current.getLongitude() + "," + current.getLatitude() + ":" +
-                            locationDatas.get(i + 1).getLongitude() + "," + locationDatas.get(i + 1).getLatitude();
-                    i++;
-                }
+        if (orderOneIndex != -1) {
+            excludedIndexes.add(orderOneIndex);
+        }
+        if (orderLastIndex != -1) {
+            excludedIndexes.add(orderLastIndex);
+        }
 
-                if (i > 1) {
-                    waypoints.append("|");
-                }
-                waypoints.append(waypoint);
+        List<LocationData> filteredLocationDatas = new ArrayList<>();
+        for (int i = 0; i < locationDatas.size(); i++) {
+            if (!excludedIndexes.contains(i)) {
+                filteredLocationDatas.add(locationDatas.get(i));
             }
-        } else if (locationDatas.size() == 2) {
-            waypoints.append(locationDatas.get(0).getLongitude() + "," + locationDatas.get(0).getLatitude());
-            waypoints.append("|");
-            waypoints.append(locationDatas.get(1).getLongitude() + "," + locationDatas.get(1).getLatitude());
-        } else if (locationDatas.size() == 1) {
-            waypoints.append(locationDatas.get(0).getLongitude() + "," + locationDatas.get(0).getLatitude());
+        }
+
+        for (int i = 0; i < filteredLocationDatas.size(); i++) {
+            LocationData current = filteredLocationDatas.get(i);
+            String waypoint = current.getLongitude() + "," + current.getLatitude();
+
+            if (i > 0) {
+                waypoints.append("|");
+            }
+            waypoints.append(waypoint);
         }
 
         return waypoints.toString();
     }
 
-
     public LocationData fetchCoordinates(String address) {
         return geocodingApiService.getCoordinates(address);
     }
 
-    private void updateDeliveryRouteOrder(List<DeliveryCompanyRouteRecord> records, List<Integer> optimizedOrder) {
+    private StringBuilder updateDeliveryRouteOrder(List<DeliveryCompanyRouteRecord> records, List<Integer> optimizedOrder) {
+        StringBuilder slackMessage = new StringBuilder();
         for (int i = 0; i < records.size(); i++) {
             DeliveryCompanyRouteRecord record = records.get(i);
             Delivery delivery = record.getDelivery();
             delivery.updateCompanyRouteRecordOrderSequence(record.getId(), optimizedOrder.get(i));
+            slackMessage.append(i + 1)
+                    .append("번 배송지: ")
+                    .append(record.getProvince()).append(" ")
+                    .append(record.getCity()).append(" ")
+                    .append(record.getDistrict()).append(" ")
+                    .append(record.getRoadName());
+
+            if (record.getDetailAddress() != null) {
+                slackMessage.append(" ").append(record.getDetailAddress());
+            }
+
+            slackMessage.append("\n");
         }
+        return slackMessage;
     }
 
     private boolean validateMaster(String token, Delivery delivery) {
