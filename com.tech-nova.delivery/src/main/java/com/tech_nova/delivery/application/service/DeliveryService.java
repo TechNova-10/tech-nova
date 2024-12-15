@@ -5,6 +5,7 @@ import com.tech_nova.delivery.application.dto.*;
 import com.tech_nova.delivery.application.dto.res.DeliveryCompanyRouteRecordResponse;
 import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.application.dto.res.DeliveryRouteRecordResponse;
+import com.tech_nova.delivery.application.dto.res.HubResponseDto;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -13,23 +14,24 @@ import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryRouteRecordRepository;
 import com.tech_nova.delivery.domain.service.DeliveryManagerAssignmentService;
+import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
+import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {
 
     private final AuthService authService;
-    private final UserService userService;
+    private final CompanyService companyService;
     private final HubService hubService;
     private final MapService mapService;
 
@@ -46,13 +48,19 @@ public class DeliveryService {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
 
+        // 요청 업체 ID
+        UUID recipientCompanyId = request.getRecipientCompanyId();
+        // CompanyService로 업체 정보 조회후 소속 허브 아이디 가져와 출발 허브로 지정
+        UUID departureHubId = UUID.randomUUID();
+        UUID arrivalHubId = validateHubExistence(request.getProvince(), request.getCity());
+
         // 추후 hubService 이용해 List<HubMovementData> 가져오기
         List<HubMovementData> hubMovementDatas = createHubMovementDataList();
 
         Delivery delivery = Delivery.create(
                 request.getOrderId(),
-                hubMovementDatas.get(0).getDepartureHubId(),
-                hubMovementDatas.get(hubMovementDatas.size() - 1).getArrivalHubId(),
+                departureHubId,
+                arrivalHubId,
                 DeliveryStatus.HUB_WAITING,
                 request.getRecipientCompanyId(),
                 request.getProvince(),
@@ -62,6 +70,11 @@ public class DeliveryService {
                 request.getDetailAddress(),
                 new ArrayList<>()
         );
+
+        // 이동 경로 생성
+        // 1. 이동 서비스로 이동정보 생성
+        // 2. 생성 후 반환되는 uuid로 다시 이동정보 조회
+        // 3. 경유지 있으면 분할해 두개저장, 없으면 단건으로 RouteRecord 저장
 
         // 담당자 배정
         // 생성 테스트 위해 임시로 첫번째 허브 배송 담당자 데이터 1명만 이용
@@ -478,5 +491,56 @@ public class DeliveryService {
         String userRole = authService.getUserRole(token);
 
         return "HUB_MANAGER".equals(userRole);
+    }
+
+    private void validateHubExistence(String token, UUID hubId) {
+        try {
+            // TODO 추후 주석처리된 코드를 적용
+            // String userRole = authService.getUserRole(token);
+            String userRole = "MASTER";
+            ApiResponseDto<HubData> response = hubService.getHub(hubId, userRole);
+            HubData hubData = response.getData();
+
+            if (hubData == null) {
+                throw new IllegalArgumentException("허브 정보를 찾을 수 없습니다.");
+            }
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("허브 검증에 실패했습니다.", e);
+        }
+    }
+
+    private UUID validateHubExistence(String province, String city) {
+        HubSearchDto hubSearchDto = new HubSearchDto();
+
+        if ("경기도".equals(province)) {
+            String[] gyeonggiNorthCities = {
+                    "고양시", "파주시", "의정부시", "동두천시", "연천군", "양주시", "포천시", "가평군", "김포시"
+            };
+
+            String[] gyeonggiSouthCities = {
+                    "수원시", "성남시", "안양시", "광명시", "안성시", "화성시", "용인시", "오산시", "평택시", "하남시",
+                    "여주시", "이천시", "구리시", "남양주시", "시흥시"
+            };
+
+            if (Arrays.asList(gyeonggiNorthCities).contains(city)) {
+                hubSearchDto.setName("경기 북부 센터");
+            } else if (Arrays.asList(gyeonggiSouthCities).contains(city)) {
+                hubSearchDto.setName("경기 남부 센터");
+            } else {
+                hubSearchDto.setProvince("경기도");
+            }
+        } else {
+            hubSearchDto.setProvince(province);
+        }
+
+        // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
+        ApiResponseDto<Page<HubResponseDto>> response = hubService.getHubs(hubSearchDto, "MASTER", Pageable.unpaged());
+
+        if (response.getData() != null && !response.getData().getContent().isEmpty()) {
+            return response.getData().getContent().get(0).getHubId();
+        }
+
+        return null;
     }
 }
