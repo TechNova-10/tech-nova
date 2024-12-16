@@ -291,8 +291,27 @@ public class DeliveryService {
 
     @Transactional
     public void deleteDelivery(UUID deliveryId, UUID userId, String role) {
-        Delivery delivery = deliveryRepository.findById(deliveryId)
+        if (!role.equals("MASTER") && !role.equals("HUB_MANAGER")) {
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
+        }
+
+        Delivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (role.equals("HUB_MANAGER")) {
+            List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
+                    .map(hubsPage -> hubsPage.getContent())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .filter(hub -> hub.getHubManagerId().equals(userId))
+                    .map(HubResponseDto::getHubId)
+                    .toList();
+
+            if (!hubIdList.contains(delivery.getDepartureHubId()) && !hubIdList.contains(delivery.getArrivalHubId())) {
+                throw new IllegalArgumentException("삭제 권한이 없습니다.");
+            }
+        }
+
         delivery.markAsDeleted(userId);
     }
 
