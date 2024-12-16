@@ -1,6 +1,7 @@
 package com.tech_nova.delivery.presentation.exception.handler;
 
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
+import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
@@ -78,6 +79,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponseDto<String>> HubAuthenticationException(AuthenticationException ex) {
+        ApiResponseDto<String> response = ApiResponseDto.<String>builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .statusMessage(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .data(null)
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseDto<String>> handleGenericException(Exception ex) {
