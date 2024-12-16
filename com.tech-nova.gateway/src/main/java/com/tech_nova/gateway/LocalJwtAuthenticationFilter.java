@@ -26,11 +26,12 @@ public class LocalJwtAuthenticationFilter implements GlobalFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
-        if (path.equals("/auth/signIn") || path.equals("/auth/signUp")) {
+        if (path.equals("/api/v1/auth/signIn") || path.equals("/api/v1/auth/signUp")) {
             return chain.filter(exchange);
         }
 
         String token = extractToken(exchange);
+        System.out.println("token: " + token);
 
         if (token == null || !validateToken(token, exchange)) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -62,6 +63,7 @@ public class LocalJwtAuthenticationFilter implements GlobalFilter {
                     .build();
             return true;
         } catch (Exception e) {
+            log.error("JWT validation failed: {}", e.getMessage());
             return false;
         }
     }

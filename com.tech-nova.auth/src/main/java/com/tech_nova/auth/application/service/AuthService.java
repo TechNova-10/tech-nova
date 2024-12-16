@@ -39,6 +39,8 @@ public class AuthService {
     }
 
     public String createAccessToken(UUID userId, String role) {
+        System.out.println("userId: " + userId);
+        System.out.println("role: " + role);
         return Jwts.builder()
                 .claim("user_id", userId)
                 .claim("role", role)
@@ -49,11 +51,7 @@ public class AuthService {
                 .compact();
     }
 
-    public User signUp(UserDto userDto, String userId, String role) {
-        if (role.equals("MASTER")) {
-            throw new IllegalArgumentException("마스터만 수행 가능한 작업입니다.");
-        }
-
+    public void signUp(UserDto userDto) {
         String username = userDto.getUsername();
         if (!isValidUsername(username)) {
             throw new IllegalArgumentException("Username은 최소 4자 이상, 10자 이하이며 알파벳 소문자(a~z)와 숫자(0~9)만 포함해야 합니다.");
@@ -73,9 +71,7 @@ public class AuthService {
                 userDto.getSlackId()
         );
 
-        user.markAsUpdated(UUID.fromString(userId));
-
-        return userRepository.save(user);
+        userRepository.save(user);
     }
 
     public String signIn(String usernmae, String password) {
