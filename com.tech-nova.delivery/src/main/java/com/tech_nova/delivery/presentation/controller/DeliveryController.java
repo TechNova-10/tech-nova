@@ -6,6 +6,7 @@ import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.request.DeliveryAddressUpdateRequest;
 import com.tech_nova.delivery.presentation.request.DeliveryRequest;
 import com.tech_nova.delivery.presentation.request.DeliverySearchRequest;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,9 @@ public class DeliveryController {
 
     private final DeliveryService deliveryService;
 
+    @Operation(summary = "배송 생성",
+            description = "X-Order-Origin 헤더 값이 있으면 주문 서비스에서 호출해 자동 실행된다고 간주,"
+                    + "X-Order-Origin 헤더 값이 없이 API를 호출하면 마스터 권한이 있는지 검증")
     @PostMapping
     public ResponseEntity<ApiResponseDto<UUID>> createDelivery(
             @RequestBody DeliveryRequest request,
@@ -32,6 +36,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", deliveryId));
     }
 
+    @Operation(summary = "베송 단건 조회")
     @GetMapping("/{delivery_id}")
     public ResponseEntity<ApiResponseDto<DeliveryResponse>> getDelivery(
             @PathVariable("delivery_id") UUID deliveryId,
@@ -42,6 +47,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponseDto.success("getDelivery successfully", delivery));
     }
 
+    @Operation(summary = "배송 수령인 변경")
     @PatchMapping("/{delivery_id}/recipient")
     public ResponseEntity<ApiResponseDto<UUID>> updateRecipient(
             @PathVariable("delivery_id") UUID deliveryId,
@@ -53,6 +59,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", deliveryId));
     }
 
+    @Operation(summary = "배송 주소 변경")
     @PatchMapping("/{delivery_id}/delivery_address")
     public ResponseEntity<ApiResponseDto<UUID>> updateDeliveryAddress(
             @PathVariable("delivery_id") UUID deliveryId,
@@ -64,6 +71,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery address updated successfully", deliveryId));
     }
 
+    @Operation(summary = "배송 삭제")
     @DeleteMapping("/{delivery_id}")
     public ResponseEntity<ApiResponseDto<Void>> deleteDelivery(
             @PathVariable("delivery_id") UUID deliveryId,
@@ -74,6 +82,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery deleted successfully"));
     }
 
+    @Operation(summary = "배송 목록 조회")
     @GetMapping
     public ResponseEntity<ApiResponseDto<Page<DeliveryResponse>>> getAllDeliveries(
             DeliverySearchRequest deliverySearchRequest,
