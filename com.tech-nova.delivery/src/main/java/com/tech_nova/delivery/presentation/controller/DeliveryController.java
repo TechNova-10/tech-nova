@@ -33,35 +33,55 @@ public class DeliveryController {
     }
 
     @GetMapping("/{delivery_id}")
-    public ResponseEntity<ApiResponseDto<DeliveryResponse>> getDelivery(@PathVariable("delivery_id") UUID deliveryId) {
-        DeliveryResponse delivery = deliveryService.getDelivery(deliveryId);
+    public ResponseEntity<ApiResponseDto<DeliveryResponse>> getDelivery(
+            @PathVariable("delivery_id") UUID deliveryId,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
+    ) {
+        DeliveryResponse delivery = deliveryService.getDelivery(deliveryId, role);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", delivery));
     }
 
     @PatchMapping("/{delivery_id}/recipient")
-    public ResponseEntity<ApiResponseDto<UUID>> updateRecipient(@PathVariable("delivery_id") UUID deliveryId, @RequestParam String recipient) {
-        deliveryService.updateRecipient(deliveryId, recipient);
+    public ResponseEntity<ApiResponseDto<UUID>> updateRecipient(
+            @PathVariable("delivery_id") UUID deliveryId,
+            @RequestParam String recipient,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
+    ) {
+        deliveryService.updateRecipient(deliveryId, recipient, userId, role);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", deliveryId));
     }
 
     @PatchMapping("/{delivery_id}/delivery_address")
-    public ResponseEntity<ApiResponseDto<UUID>> updateDeliveryAddress(@PathVariable("delivery_id") UUID deliveryId, @RequestBody DeliveryAddressUpdateRequest recipient) {
-        deliveryService.updateDeliveryAddress(deliveryId, recipient.toDTO());
+    public ResponseEntity<ApiResponseDto<UUID>> updateDeliveryAddress(
+            @PathVariable("delivery_id") UUID deliveryId,
+            @RequestBody DeliveryAddressUpdateRequest recipient,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
+    ) {
+        deliveryService.updateDeliveryAddress(deliveryId, recipient.toDTO(), userId, role);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", deliveryId));
     }
 
     @DeleteMapping("/{delivery_id}")
-    public ResponseEntity<ApiResponseDto<Void>> createDelivery(@PathVariable("delivery_id") UUID deliveryId) {
-        deliveryService.deleteDelivery(deliveryId);
+    public ResponseEntity<ApiResponseDto<Void>> createDelivery(
+            @PathVariable("delivery_id") UUID deliveryId,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
+    ) {
+        deliveryService.deleteDelivery(deliveryId, userId, role);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery deleted successfully"));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponseDto<Page<DeliveryResponse>>> getAllCompanyRouteRecords(
             DeliverySearchRequest deliverySearchRequest,
-            Pageable pageable
+            Pageable pageable,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
     ) {
-        Page<DeliveryResponse> routeRecords = deliveryService.getDeliverys(deliverySearchRequest, pageable);
+        Page<DeliveryResponse> routeRecords = deliveryService.getDeliverys(deliverySearchRequest, pageable, userId, role);
 
         return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records retrieved successfully", routeRecords));
     }
