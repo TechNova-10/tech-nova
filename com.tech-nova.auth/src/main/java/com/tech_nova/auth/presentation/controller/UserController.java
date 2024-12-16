@@ -52,4 +52,18 @@ public class UserController {
         userService.deleteUser(searchUserId, userId, role);
         return ResponseEntity.ok(ApiResponseDto.success("User Role deleted successfully"));
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getUserByToken(@RequestHeader("Authorization") String token) {
+        String jwt = token.startsWith("Bearer ") ? token.replace("Bearer ", "") : token;
+        UserResponse userResponse = userService.getUserByToken(jwt);
+        return ResponseEntity.ok(userResponse);
+    }
+    @GetMapping("/me/role")
+    public ResponseEntity<String> getUserRoleByToken(@RequestHeader("Authorization") String token) {
+        String jwt = token.startsWith("Bearer ") ? token.replace("Bearer ", "") : token;
+        String role = userService.getUserRoleByToken(jwt);
+        return ResponseEntity.ok(role);
+    }
+
 }

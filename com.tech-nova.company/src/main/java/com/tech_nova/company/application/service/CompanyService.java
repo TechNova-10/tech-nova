@@ -9,11 +9,10 @@ import com.tech_nova.company.domain.model.QCompany;
 import com.tech_nova.company.domain.repository.CompanyRepository;
 import com.tech_nova.company.infrastructure.client.AuthServiceClient;
 import com.tech_nova.company.infrastructure.client.HubServiceClient;
-import com.tech_nova.company.infrastructure.dto.HubApiResponse;
 import com.tech_nova.company.infrastructure.dto.HubResponse;
+import com.tech_nova.company.infrastructure.dto.UserData;
 import com.tech_nova.company.presentation.dto.ApiResponseDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,7 +35,7 @@ public class CompanyService {
 
         validateHubId(requestDto.getHubId());
 
-        validateHubManager(token, requestDto.getHubId());
+        validateHubManager(token, requestDto.getHubManagerId());
 
         Company company = Company.builder()
                 .hubId(requestDto.getHubId())
@@ -61,11 +60,11 @@ public class CompanyService {
 
         validateHubId(requestDto.getHubId());
 
-//        validateUpdatePermission(existingCompany, requestDto, token);
+        validateUpdatePermission(existingCompany, requestDto, token);
 
         Company updatedCompany = existingCompany.toBuilder()
                 .hubId(requestDto.getHubId())
-//                .hubManagerId(requestDto.getHubManagerId())
+                .hubManagerId(requestDto.getHubManagerId())
                 .name(requestDto.getName())
                 .type(requestDto.getType())
                 .province(requestDto.getProvince())
@@ -155,35 +154,36 @@ public class CompanyService {
         }
     }
 
-//    private void validateUpdatePermission(Company existingCompany, CompanyRequest requestDto, String token) {
-//        String userRole = authServiceClient.getUserRole(token);
-//        String userId = authServiceClient.getUserId(token);
-//
-//        if ("MASTER".equals(userRole)) {
-//            // 마스터는 모든 업체 수정 가능
-//            return;
-//        } else if ("HUB_MANAGER".equals(userRole)) {
-//            // 허브 관리자는 해당 허브의 업체만 수정 가능
-//            validateHubManager(token, requestDto.getHubId());
-//        } else if ("COMPANY_MANAGER".equals(userRole)) {
-//            // 업체 관리자는 자신의 업체만 수정 가능
-//            if (!existingCompany.getHubManagerId().toString().equals(userId)) {
-//                throw new IllegalArgumentException("해당 업체를 수정할 권한이 없습니다.");
-//            }
-//        } else {
-//            throw new IllegalArgumentException("수정 권한이 없는 사용자입니다.");
-//        }
-//    }
+    private void validateUpdatePermission(Company existingCompany, CompanyRequest requestDto, String token) {
+        String userRole = authServiceClient.getUserRoleByToken(token).getData();
+        UserData userId = authServiceClient.getUserByToken(token).getData();
 
-    private void validateHubManager(String token, UUID hubId) {
-        String userRole = authServiceClient.getUserRole(token);
+        if ("MASTER".equals(userRole)) {
+            // 마스터는 모든 업체 수정 가능
+            return;
+        } else if ("HUB_MANAGER".equals(userRole)) {
+            // 허브 관리자는 해당 허브의 업체만 수정 가능
+            validateHubManager(token, requestDto.getHubManagerId());
+        } else if ("COMPANY_MANAGER".equals(userRole)) {
+            // 업체 관리자는 자신의 업체만 수정 가능
+            if (!existingCompany.getHubManagerId().toString().equals(userId)) {
+                throw new IllegalArgumentException("해당 업체를 수정할 권한이 없습니다.");
+            }
+        } else {
+            throw new IllegalArgumentException("수정 권한이 없는 사용자입니다.");
+        }
+    }
+
+    private void validateHubManager(String token, UUID hubManagerId) {
+        String userRole = authServiceClient.getUserRoleByToken(token).getData();
         if ("MASTER".equals(userRole)) {
             return;
         }
 
-        String userHubId = authServiceClient.getUserHubId(token);
-        if (!hubId.toString().equals(userHubId)) {
+        UserData userId = authServiceClient.getUserByToken(token).getData();
+        if (!hubManagerId.toString().equals(userId)) {
             throw new IllegalArgumentException("해당 허브의 업체들 관련해서 관리할 권한이 없습니다.");
         }
     }
+
 }
