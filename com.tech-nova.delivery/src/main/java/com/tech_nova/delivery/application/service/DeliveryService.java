@@ -194,8 +194,15 @@ public class DeliveryService {
         return DeliveryResponse.of(delivery);
     }
 
-    public DeliveryRouteRecordResponse getDeliveryRouteRecord(UUID deliveryId) {
-        // TODO: 마스터와 허브 관리자이면 삭제된 배송도 볼 수 있게 수정
+    public DeliveryRouteRecordResponse getDeliveryRouteRecord(UUID deliveryId, UUID userId, String role) {
+        if (role.equals("HUB_MANAGER") || role.equals("MASTER")) {
+            DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryId)
+                    .orElseThrow(() -> new IllegalArgumentException("배송 경로를 찾을 수 없습니다."));
+
+            return DeliveryRouteRecordResponse.of(routeRecord);
+
+        }
+
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 경로를 찾을 수 없습니다."));
 
