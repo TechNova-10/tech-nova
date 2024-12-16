@@ -97,12 +97,4 @@ public class DeliveryCompanyRouteRecordController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records retrieved successfully", routeRecords));
     }
 
-    // TODO 테스트 끝나면 삭제 에정. 이 기능은 스케줄로 자동 실행되기 때문.
-    @PatchMapping("/order-sequence")
-    public ResponseEntity<ApiResponseDto<Void>> setOrderSequence() {
-        deliveryCompanyRouteRecordService.setOrderSequence();
-
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records fetched successfully"));
-    }
-
 }
