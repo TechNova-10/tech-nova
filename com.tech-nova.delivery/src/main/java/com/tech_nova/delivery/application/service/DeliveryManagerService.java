@@ -2,7 +2,6 @@ package com.tech_nova.delivery.application.service;
 
 import com.tech_nova.delivery.application.dto.DeliveryManagerDto;
 import com.tech_nova.delivery.application.dto.HubData;
-import com.tech_nova.delivery.application.dto.UserData;
 import com.tech_nova.delivery.application.dto.res.DeliveryManagerResponse;
 import com.tech_nova.delivery.application.dto.res.HubResponseDto;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
@@ -13,6 +12,7 @@ import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
+import com.tech_nova.delivery.presentation.request.DeliveryManagerRequest;
 import com.tech_nova.delivery.presentation.request.DeliveryManagerSearchRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -142,6 +142,30 @@ public class DeliveryManagerService {
                 .map(DeliveryManagerResponse::of);
     }
 
+    @Transactional
+    public void updateDeliveryManager(UUID deliveryManagerId, DeliveryManagerRequest request, UUID userId, String role) {
+        if (!role.equals("HUB_MANAGER") && !role.equals("MASTER")) {
+            throw new AuthenticationException("배송담당자를 수정할 권한이 없습니다.");
+        }
+
+        DeliveryManager deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(deliveryManagerId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+        if (role.equals("HUB_MANAGER")) {
+            ApiResponseDto<HubData> response = hubService.getHub(request.getAssignedHubId(), "MASTER");
+            HubData hubData = response.getData();
+            if (!hubData.getHubManagerId().equals(userId)) {
+                throw new AuthenticationException("담당 허브 외 다른 허브에 속하는 배송 담당자를 수정할 권한이 없습니다.");
+            }
+        }
+
+        deliveryManager.update(
+                request.getAssignedHubId(),
+                DeliveryManagerRole.valueOf(request.getManagerRole()),
+                request.getDeliveryOrderSequence()
+        );
+    }
+
     private void checkDeliveryOrderSequenceExists(UUID assignedHubId, Integer deliveryOrderSequence) {
         if (deliveryManagerRepository.existsByAssignedHubIdAndDeliveryOrderSequence(assignedHubId, deliveryOrderSequence)) {
             throw new DeliveryOrderSequenceAlreadyExistsException("해당 순번은 이미 존재합니다.");
@@ -188,9 +212,5 @@ public class DeliveryManagerService {
         } catch (Exception e) {
             throw new IllegalArgumentException("허브 검증에 실패했습니다.", e);
         }
-    }
-
-    private UserData getUser(UUID searchUserId, UUID userId, String role) {
-        return authService.getUser(searchUserId, userId, role).getData();
     }
 }
