@@ -111,19 +111,51 @@ public class Delivery extends Timestamped {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
+        if (routeRecord.getCurrentStatus().equals(DeliveryHubStatus.HUB_WAITING)) {
+            if (currentStatus.equals(DeliveryHubStatus.HUB_ARRIVE)) {
+                throw new IllegalArgumentException("시작하지 않은 배송에 대한 완료 처리는 불가능합니다.");
+            }
+        }
+
         routeRecord.update(deliveryManager, currentStatus, realDistance, realTime);
         routeRecord.markAsUpdated(updatedBy);
     }
 
-    public void updateRouteRecordState(UUID deliveryRouteId, DeliveryHubStatus currentStatus, UUID updatedBy) {
+    public void updateRouteRecordState(
+            UUID deliveryRouteId,
+            DeliveryHubStatus currentStatus,
+            UUID updatedBy) {
         DeliveryRouteRecord routeRecord = routeRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
+        if (routeRecord.getCurrentStatus().equals(DeliveryHubStatus.HUB_WAITING)) {
+            if (currentStatus.equals(DeliveryHubStatus.HUB_ARRIVE)) {
+                throw new IllegalArgumentException("시작하지 않은 배송에 대한 완료 처리는 불가능합니다.");
+            }
+        }
+
+        if (routeRecord.getCurrentStatus().equals(DeliveryHubStatus.HUB_MOVING)) {
+            if (currentStatus.equals(DeliveryHubStatus.HUB_ARRIVE)) {
+                routeRecord.updateRealDistanceAndRealTime();
+            }
+        }
+
         routeRecord.updateCurrentStatus(currentStatus);
+
         routeRecord.markAsUpdated(updatedBy);
         this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
+    }
+
+    public void updateRouteRecordDeliveryManager(UUID deliveryRouteId, DeliveryManager deliveryManager, UUID updatedBy) {
+        DeliveryRouteRecord routeRecord = routeRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.updateDeliveryManager(deliveryManager);
+        routeRecord.markAsUpdated(updatedBy);
     }
 
     public void updateCompanyRouteRecord(
@@ -143,15 +175,56 @@ public class Delivery extends Timestamped {
         routeRecord.markAsUpdated(updatedBy);
     }
 
-    public void updateCompanyRouteRecordState(UUID deliveryRouteId, DeliveryCompanyStatus currentStatus, UUID updatedBy) {
+    public void updateCompanyRouteRecordState(
+            UUID deliveryRouteId,
+            DeliveryCompanyStatus currentStatus,
+            UUID updatedBy) {
         DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
                 .filter(record -> record.getId().equals(deliveryRouteId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
+        if (routeRecord.getCurrentStatus().equals(DeliveryCompanyStatus.COMPANY_WAITING)) {
+            if (currentStatus.equals(DeliveryCompanyStatus.DELIVERY_COMPLETED)) {
+                throw new IllegalArgumentException("시작하지 않은 배송에 대한 완료 처리는 불가능합니다.");
+            }
+        }
+
+        if (routeRecord.getCurrentStatus().equals(DeliveryCompanyStatus.COMPANY_MOVING)) {
+            if (currentStatus.equals(DeliveryCompanyStatus.DELIVERY_COMPLETED)) {
+                routeRecord.updateRealDistanceAndRealTime();
+            }
+        }
+
         routeRecord.updateCurrentStatus(currentStatus);
+
         routeRecord.markAsUpdated(updatedBy);
         this.currentStatus = DeliveryStatus.valueOf(currentStatus.name());
+    }
+
+    public void updateCompanyRouteRecordOrderSequence(
+            UUID deliveryRouteId,
+            int sequnce) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        routeRecord.updateDeliveryOrderSequence(sequnce);
+    }
+
+    public void updateCompanyRouteRecordDeliveryManager(UUID deliveryRouteId, DeliveryManager deliveryManager, UUID updatedBy) {
+        DeliveryCompanyRouteRecord routeRecord = companyRouteRecords.stream()
+                .filter(record -> record.getId().equals(deliveryRouteId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        if (!routeRecord.getDepartureHubId().equals(deliveryManager.getAssignedHubId())) {
+            throw new IllegalArgumentException("소속허브가 다른 배송 담당자입니다.");
+        }
+
+        routeRecord.updateDeliveryManager(deliveryManager);
+        routeRecord.markAsUpdated(updatedBy);
     }
 
     public void deleteRouteRecordState(UUID deliveryRouteId, UUID deletedBy) {
@@ -160,7 +233,6 @@ public class Delivery extends Timestamped {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
-        // 추후 인증 구현되면 사용자 Id로 변경
         routeRecord.markAsDeleted(deletedBy);
     }
 
@@ -170,7 +242,6 @@ public class Delivery extends Timestamped {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
-        // 추후 인증 구현되면 사용자 Id로 변경
         routeRecord.markAsDeleted(deletedBy);
     }
 

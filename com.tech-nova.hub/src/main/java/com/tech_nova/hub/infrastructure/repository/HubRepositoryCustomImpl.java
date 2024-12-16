@@ -46,6 +46,7 @@ public class HubRepositoryCustomImpl implements HubRepositoryCustom {
 
   private BooleanBuilder conditions(String role, HubSearchDto hubSearchDto) {
     BooleanBuilder builder = new BooleanBuilder()
+        .and(nameEq(hubSearchDto.getName()))
         .and(provinceEq(hubSearchDto.getProvince()))
         .and(cityEq(hubSearchDto.getCity()))
         .and(districtContains(hubSearchDto.getDistrict()))
@@ -61,6 +62,10 @@ public class HubRepositoryCustomImpl implements HubRepositoryCustom {
 
   private BooleanExpression deletedEq(Boolean isDeleted) {
     return isDeleted != null ? hub.isDeleted.eq(isDeleted) : null;
+  }
+
+  private BooleanExpression nameEq(String name) {
+    return name != null ? hub.name.eq(name) : null;
   }
 
   private BooleanExpression provinceEq(String province) {

@@ -33,16 +33,16 @@ public class HubController {
   private final HubSearchService hubSearchService;
 
   @PostMapping
-  public ResponseEntity<ApiResponseDto<Void>> createHub(
+  public ResponseEntity<ApiResponseDto<HubResponseDto>> createHub(
       @RequestBody HubRequestDto hubRequestDto,
       @RequestHeader(value = "user_id", required = true) UUID userId,
       @RequestHeader(value = "role", required = true) String role
   ) {
-    hubService.createHub(hubRequestDto, userId, role);
     return new ResponseEntity<>(
-        ApiResponseDto.<Void>builder()
+        ApiResponseDto.<HubResponseDto>builder()
             .code(201)
             .message("허브 생성 완료")
+            .data(hubService.createHub(hubRequestDto, userId, role))
             .build(),
         HttpStatus.CREATED
     );
@@ -80,17 +80,17 @@ public class HubController {
   }
 
   @PutMapping("/{hubId}")
-  public ResponseEntity<ApiResponseDto<Void>> updateHub(
+  public ResponseEntity<ApiResponseDto<HubResponseDto>> updateHub(
       @PathVariable UUID hubId,
       @RequestBody HubRequestDto hubRequestDto,
       @RequestHeader(value = "user_id", required = true) UUID userId,
       @RequestHeader(value = "role", required = true) String role
   ) {
-    hubService.updateHub(hubId, hubRequestDto, userId, role);
     return new ResponseEntity<>(
-        ApiResponseDto.<Void>builder()
+        ApiResponseDto.<HubResponseDto>builder()
             .code(200)
             .message("허브 수정 완료")
+            .data(hubService.updateHub(hubId, hubRequestDto, userId, role))
             .build(),
         HttpStatus.OK
     );

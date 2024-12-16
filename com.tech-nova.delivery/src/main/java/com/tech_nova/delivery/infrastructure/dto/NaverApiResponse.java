@@ -1,37 +1,43 @@
 package com.tech_nova.delivery.infrastructure.dto;
 
+
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 public class NaverApiResponse {
-    private String status;  // 상태
-    private Meta meta;      // 메타 정보
-    private List<Address> addresses;  // 주소 리스트
+    private String code;  // 응답 코드
+    private String message;  // 메시지
+    private String currentDateTime;  // 현재 시간
+    private Route route;  // 경로 정보
 
     @Data
-    public static class Meta {
-        private int totalCount;  // 총 검색 결과 수
-        private int page;        // 현재 페이지 번호
-        private int count;       // 현재 페이지의 결과 개수
-    }
-
-    @Data
-    public static class Address {
-        private String roadAddress;      // 도로명 주소
-        private String jibunAddress;     // 지번 주소
-        private String englishAddress;   // 영문 주소
-        private List<AddressElement> addressElements;  // 주소 요소
-        private String x;                // 경도
-        private String y;                // 위도
+    public static class Route {
+        private List<Traoptimal> traoptimal;  // 경로 최적화 정보
 
         @Data
-        public static class AddressElement {
-            private List<String> types;  // 주소 요소 종류
-            private String longName;     // 주소의 전체 이름
-            private String shortName;    // 주소의 짧은 이름
-            private String code;         // 주소 코드
+        public static class Traoptimal {
+            private Summary summary;  // 경로 요약 정보
+
+            @Data
+            public static class Summary {
+                private Location start;  // 출발지 정보
+                private Location goal;   // 목적지 정보
+                private int distance;    // 거리 (미터)
+                private int duration;    // 소요 시간 (밀리초)
+                private String departureTime;  // 출발 시간
+                private List<List<Double>> bbox;  // 경로를 감싸는 박스 좌표
+                private int tollFare;    // 통행료
+                private int taxiFare;    // 택시 요금
+                private int fuelPrice;   // 연료 요금
+            }
+
+            @Data
+            public static class Location {
+                private List<Double> location;  // 위치 (경도, 위도)
+                private Integer dir;  // 방향
+            }
         }
     }
 }
