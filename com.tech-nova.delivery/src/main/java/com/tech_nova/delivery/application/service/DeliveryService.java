@@ -174,9 +174,9 @@ public class DeliveryService {
         return DeliveryResponse.of(delivery).getId();
     }
 
-
+    @Cacheable(cacheNames = "deliveryCache", key = "#deliveryId")
     @Transactional(readOnly = true)
-    public DeliveryResponse getDelivery(UUID deliveryId, String role) {
+    public DeliveryResponse getDelivery(UUID deliveryId, UUID userId, String role) {
         if (role.equals("HUB_MANAGER") || role.equals("MASTER")) {
             Delivery delivery = deliveryRepository.findById(deliveryId)
                     .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
@@ -186,6 +186,33 @@ public class DeliveryService {
         Delivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
 
+        if (role.equals("COMPANY_DELIVERY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
+            List<DeliveryRouteRecord> routeRecords = delivery.getRouteRecords();
+            List<DeliveryCompanyRouteRecord> companyRouteRecords = delivery.getCompanyRouteRecords();
+
+            boolean hasPermission = false;
+
+            for (DeliveryRouteRecord routeRecord : routeRecords) {
+                if (routeRecord.getDeliveryManager() != null && routeRecord.getDeliveryManager().getId().equals(userId)) {
+                    hasPermission = true;
+                    break;
+                }
+            }
+
+            if (!hasPermission) {
+                for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
+                    if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
+                        hasPermission = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasPermission) {
+                throw new IllegalArgumentException("조회 권한이 없습니다.");
+            }
+
+        }
         return DeliveryResponse.of(delivery);
     }
 
@@ -497,8 +524,8 @@ public class DeliveryService {
                     .toList();
             request.setManageHubIds(hubIdList);
         }
-        return deliveryRepositoryCustom.searchDelivery(role, request, customPageable).map(DeliveryResponse::of);
 
+        return deliveryRepositoryCustom.searchDelivery(userId, role, request, customPageable).map(DeliveryResponse::of);
     }
 
     private void validateRoleForHubAssignment(DeliveryManager deliveryManager) {

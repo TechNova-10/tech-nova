@@ -38,8 +38,8 @@ public class DeliveryController {
             @RequestHeader(value = "X-User-Id", required = true) UUID userId,
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
-        DeliveryResponse delivery = deliveryService.getDelivery(deliveryId, role);
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", delivery));
+        DeliveryResponse delivery = deliveryService.getDelivery(deliveryId, userId, role);
+        return ResponseEntity.ok(ApiResponseDto.success("getDelivery successfully", delivery));
     }
 
     @PatchMapping("/{delivery_id}/recipient")
@@ -61,11 +61,11 @@ public class DeliveryController {
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
         deliveryService.updateDeliveryAddress(deliveryId, recipient.toDTO(), userId, role);
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", deliveryId));
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery address updated successfully", deliveryId));
     }
 
     @DeleteMapping("/{delivery_id}")
-    public ResponseEntity<ApiResponseDto<Void>> createDelivery(
+    public ResponseEntity<ApiResponseDto<Void>> deleteDelivery(
             @PathVariable("delivery_id") UUID deliveryId,
             @RequestHeader(value = "X-User-Id", required = true) UUID userId,
             @RequestHeader(value = "X-Role", required = true) String role
@@ -75,14 +75,14 @@ public class DeliveryController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponseDto<Page<DeliveryResponse>>> getAllCompanyRouteRecords(
+    public ResponseEntity<ApiResponseDto<Page<DeliveryResponse>>> getAllDeliveries(
             DeliverySearchRequest deliverySearchRequest,
             Pageable pageable,
             @RequestHeader(value = "X-User-Id", required = true) UUID userId,
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
-        Page<DeliveryResponse> routeRecords = deliveryService.getDeliveries(deliverySearchRequest, pageable, userId, role);
+        Page<DeliveryResponse> deliveries = deliveryService.getDeliveries(deliverySearchRequest, pageable, userId, role);
 
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records retrieved successfully", routeRecords));
+        return ResponseEntity.ok(ApiResponseDto.success("getAllDeliveries successfully", deliveries));
     }
 }

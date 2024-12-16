@@ -18,6 +18,8 @@ public interface DeliveryManagerRepository {
 
     boolean existsByManagerUserId(UUID managerUserId);
 
+    Optional<DeliveryManager> findByManagerUserIdAndIsDeletedFalse(UUID managerUserId);
+
     DeliveryManager save(DeliveryManager deliveryManager);
 
     Integer findMaxDeliveryOrderByHubId(UUID assignedHubId);
@@ -31,6 +33,7 @@ public interface DeliveryManagerRepository {
     int countCompanyManagers(UUID assignedHubId, DeliveryManagerRole role);
 
     List<DeliveryManager> findAllByRoleAndIsDeletedFalse(DeliveryManagerRole role);
+
     List<DeliveryManager> findAllByRoleAndHubIdAndIsDeletedFalse(DeliveryManagerRole role, UUID hubId);
 
 }
