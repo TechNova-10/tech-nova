@@ -9,8 +9,11 @@ import com.tech_nova.company.domain.model.QCompany;
 import com.tech_nova.company.domain.repository.CompanyRepository;
 import com.tech_nova.company.infrastructure.client.AuthServiceClient;
 import com.tech_nova.company.infrastructure.client.HubServiceClient;
+import com.tech_nova.company.infrastructure.dto.HubApiResponse;
+import com.tech_nova.company.infrastructure.dto.HubResponse;
 import com.tech_nova.company.presentation.dto.ApiResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -146,8 +149,8 @@ public class CompanyService {
     }
 
     private void validateHubId(UUID hubId) {
-        boolean isValid = hubServiceClient.isHubIdValid(hubId.toString());
-        if (!isValid) {
+        ApiResponseDto<HubResponse> hubResponse = hubServiceClient.getHub(hubId).getData();
+        if (hubResponse == null) {
             throw new IllegalArgumentException("유효하지 않은 hubId!");
         }
     }

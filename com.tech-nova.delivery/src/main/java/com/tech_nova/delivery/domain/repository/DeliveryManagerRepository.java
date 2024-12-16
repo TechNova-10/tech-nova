@@ -29,4 +29,8 @@ public interface DeliveryManagerRepository {
     int countHubManagers(DeliveryManagerRole role);
 
     int countCompanyManagers(UUID assignedHubId, DeliveryManagerRole role);
+
+    List<DeliveryManager> findAllByRoleAndIsDeletedFalse(DeliveryManagerRole role);
+    List<DeliveryManager> findAllByRoleAndHubIdAndIsDeletedFalse(DeliveryManagerRole role, UUID hubId);
+
 }
