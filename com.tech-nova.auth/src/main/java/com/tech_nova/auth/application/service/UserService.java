@@ -38,11 +38,6 @@ public class UserService {
 
     @Transactional
     public void updateUserRole(UUID searchUserId, String updateRole, UUID userId, String role) {
-        UserRole userRole = UserRole.valueOf(role.toUpperCase());
-        if (!userRole.equals(UserRole.MASTER)) {
-            throw new ForbiddenException("마스터 관리자만 수정이 가능합니다.");
-        }
-
         User user = userRepository.findById(searchUserId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
         user.updateRole(UserRole.valueOf(updateRole), userId);
