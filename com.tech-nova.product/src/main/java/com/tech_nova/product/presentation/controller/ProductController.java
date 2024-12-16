@@ -30,19 +30,19 @@ public class ProductController {
 
     @PutMapping("/{productId}")
     public ResponseEntity<ApiResponseDto<ProductResponse>> updateProduct(
-            @RequestHeader("Authorization") String authorizationHeader,
+//            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable UUID productId, @RequestBody ProductRequest request) {
-        String token = extractToken(authorizationHeader);
-        ProductResponse response = productService.updateProduct(token, productId, request);
+//        String token = extractToken(authorizationHeader);
+        ProductResponse response = productService.updateProduct(productId, request);
         return ResponseEntity.ok(ApiResponseDto.success("상품 수정 완료", response));
     }
 
     @DeleteMapping("/{productId}")
     public ResponseEntity<ApiResponseDto<Void>> deleteProduct(
-            @RequestHeader("Authorization") String authorizationHeader,
+//            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable UUID productId) {
-        String token = extractToken(authorizationHeader);
-        productService.deleteProduct(token, productId);
+//        String token = extractToken(authorizationHeader);
+        productService.deleteProduct(productId);
         return ResponseEntity.ok(ApiResponseDto.successDelete());
     }
 
