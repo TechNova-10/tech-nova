@@ -51,7 +51,7 @@ public class DeliveryRouteRecordService {
                 pageable.getSort()
         );
 
-        return deliveryRouteRecordRepositoryCustom.searchDeliveryRouteRecords("MASTER", deliveryRouteSearchRequest, customPageable).map(DeliveryRouteRecordResponse::of);
+        return deliveryRouteRecordRepositoryCustom.searchDeliveryRouteRecords(userId, role, deliveryRouteSearchRequest, customPageable).map(DeliveryRouteRecordResponse::of);
 
     }
 
