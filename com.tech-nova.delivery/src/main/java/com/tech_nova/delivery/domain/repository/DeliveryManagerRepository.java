@@ -30,7 +30,7 @@ public interface DeliveryManagerRepository {
 
     int countCompanyManagers(UUID assignedHubId, DeliveryManagerRole role);
 
-    List<DeliveryManager> findAllByTypeAndIsDeletedFalse(String type);
-    List<DeliveryManager> findAllByTypeAndHubIdAndIsDeletedFalse(String type, UUID hubId);
+    List<DeliveryManager> findAllByRoleAndIsDeletedFalse(DeliveryManagerRole role);
+    List<DeliveryManager> findAllByRoleAndHubIdAndIsDeletedFalse(DeliveryManagerRole role, UUID hubId);
 
 }
