@@ -7,11 +7,16 @@ import com.tech_nova.delivery.application.dto.res.DeliveryManagerResponse;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
+import com.tech_nova.delivery.domain.repository.DeliveryManagerRepositoryCustom;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
+import com.tech_nova.delivery.presentation.request.DeliveryManagerSearchRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +30,7 @@ public class DeliveryManagerService {
     private final HubService hubService;
 
     private final DeliveryManagerRepository deliveryManagerRepository;
+    private final DeliveryManagerRepositoryCustom deliveryManagerRepositoryCustom;
 
     @Transactional
     public UUID createDeliveryManager(DeliveryManagerDto request, UUID userId, String role) {
@@ -79,7 +85,6 @@ public class DeliveryManagerService {
     @Cacheable(cacheNames = "deliveryManagerCache", key = "#deliveryManagerId")
     @Transactional(readOnly = true)
     public DeliveryManagerResponse getDeliveryManager(UUID deliveryManagerId, UUID userId, String role) {
-        System.out.println("caccccche");
         if (role.equals("MASTER")) {
             DeliveryManager manager = deliveryManagerRepository.findById(deliveryManagerId)
                     .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
@@ -91,6 +96,31 @@ public class DeliveryManagerService {
                 .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
 
         return DeliveryManagerResponse.of(manager);
+    }
+
+    @Cacheable(cacheNames = "deliveryManagerListCache")
+    @Transactional(readOnly = true)
+    public Page<DeliveryManagerResponse> getDeliveryManagers(DeliveryManagerSearchRequest request, Pageable pageable, UUID userId, String role) {
+        int pageSize =
+                (pageable.getPageSize() == 30
+                        || pageable.getPageSize() == 50)
+                        ? pageable.getPageSize() : 10;
+
+        Pageable customPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageSize,
+                pageable.getSort()
+        );
+
+        if (request.getAssignedHubId() != null && role.equals("HUB_MANAGER")) {
+            ApiResponseDto<HubData> response = hubService.getHub(request.getAssignedHubId(), "MASTER");
+            HubData hubData = response.getData();
+            if (!hubData.getHubManagerId().equals(userId)) {
+                role = "IS_HUB_MANAGER";
+            }
+        }
+
+        return deliveryManagerRepositoryCustom.searchDeliveryManager(role, request, customPageable).map(DeliveryManagerResponse::of);
     }
 
     private void checkDeliveryOrderSequenceExists(UUID assignedHubId, Integer deliveryOrderSequence) {
