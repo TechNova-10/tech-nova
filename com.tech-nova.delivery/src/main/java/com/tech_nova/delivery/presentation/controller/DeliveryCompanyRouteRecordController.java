@@ -88,9 +88,11 @@ public class DeliveryCompanyRouteRecordController {
     @GetMapping
     public ResponseEntity<ApiResponseDto<Page<DeliveryCompanyRouteRecordResponse>>> getAllCompanyRouteRecords(
             DeliveryRouteSearchRequest deliveryRouteSearchRequest,
-            Pageable pageable
+            Pageable pageable,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
     ) {
-        Page<DeliveryCompanyRouteRecordResponse> routeRecords = deliveryCompanyRouteRecordService.getDeliveryCompanyRouteRecords(deliveryRouteSearchRequest, pageable);
+        Page<DeliveryCompanyRouteRecordResponse> routeRecords = deliveryCompanyRouteRecordService.getDeliveryCompanyRouteRecords(deliveryRouteSearchRequest, pageable, userId, role);
 
         return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records retrieved successfully", routeRecords));
     }

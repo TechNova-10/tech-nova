@@ -221,7 +221,7 @@ public class DeliveryCompanyRouteRecordService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DeliveryCompanyRouteRecordResponse> getDeliveryCompanyRouteRecords(DeliveryRouteSearchRequest deliveryRouteSearchRequest, Pageable pageable) {
+    public Page<DeliveryCompanyRouteRecordResponse> getDeliveryCompanyRouteRecords(DeliveryRouteSearchRequest deliveryRouteSearchRequest, Pageable pageable, UUID userId, String role) {
 
         int pageSize =
                 (pageable.getPageSize() == 30
@@ -234,7 +234,7 @@ public class DeliveryCompanyRouteRecordService {
                 pageable.getSort()
         );
 
-        return deliveryCompanyRouteRecordRepositoryCustom.searchDeliveryCompanyRouteRecords("MASTER", deliveryRouteSearchRequest, customPageable).map(DeliveryCompanyRouteRecordResponse::of);
+        return deliveryCompanyRouteRecordRepositoryCustom.searchDeliveryCompanyRouteRecords(userId, role, deliveryRouteSearchRequest, customPageable).map(DeliveryCompanyRouteRecordResponse::of);
 
     }
 
