@@ -12,7 +12,15 @@ spring:
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/auth/**
+            - Path=/api/v1/auth/**
+            - Path=/api/v1/users/**
+        - id: delivery-service
+          uri: lb://delivery-service
+          predicates:
+            - Path=/api/v1/deliveries/**
+            - Path=/api/v1/deliveries/routes/**
+            - Path=/api/v1/deliveries/companies/routes/**
+            - Path=/api/v1/delivery-managers/**
       discovery:
         locator:
           enabled: true
