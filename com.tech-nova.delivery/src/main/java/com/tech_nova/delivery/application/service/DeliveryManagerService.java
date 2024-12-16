@@ -11,6 +11,7 @@ import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +45,7 @@ public class DeliveryManagerService {
         }
 
         if (request.getManagerRole().equals("COMPANY_DELIVERY_MANAGER")) {
-            validateHubExistence("", request.getAssignedHubId());
+            validateHubExistence(request.getAssignedHubId());
         }
 
         validateRoleAndHubAssignment(request);
@@ -75,8 +76,10 @@ public class DeliveryManagerService {
         return DeliveryManagerResponse.of(deliveryManager).getId();
     }
 
+    @Cacheable(cacheNames = "deliveryManagerCache", key = "#deliveryManagerId")
     @Transactional(readOnly = true)
     public DeliveryManagerResponse getDeliveryManager(UUID deliveryManagerId, UUID userId, String role) {
+        System.out.println("caccccche");
         if (role.equals("MASTER")) {
             DeliveryManager manager = deliveryManagerRepository.findById(deliveryManagerId)
                     .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
@@ -124,7 +127,7 @@ public class DeliveryManagerService {
         }
     }
 
-    private void validateHubExistence(String token, UUID hubId) {
+    private void validateHubExistence(UUID hubId) {
         try {
             ApiResponseDto<HubData> response = hubService.getHub(hubId, "MASTER");
             HubData hubData = response.getData();

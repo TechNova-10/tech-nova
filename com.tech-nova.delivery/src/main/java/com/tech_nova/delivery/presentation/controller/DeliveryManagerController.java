@@ -27,7 +27,7 @@ public class DeliveryManagerController {
     }
 
     @GetMapping("/{delivery_manager_id}")
-    public ResponseEntity<ApiResponseDto<DeliveryManagerResponse>> createDeliveryManager(
+    public ResponseEntity<ApiResponseDto<DeliveryManagerResponse>> getDeliveryManager(
             @PathVariable("delivery_manager_id") UUID deliveryManagerId,
             @RequestHeader(value = "X-User-Id", required = true) UUID userId,
             @RequestHeader(value = "X-Role", required = true) String role
