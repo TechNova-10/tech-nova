@@ -13,7 +13,6 @@ import com.tech_nova.delivery.infrastructure.dto.CompanyResponse;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
 import com.tech_nova.delivery.infrastructure.dto.MovementRequestDto;
 import com.tech_nova.delivery.infrastructure.dto.MovementResponse;
-import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import com.tech_nova.delivery.presentation.request.DeliverySearchRequest;
@@ -30,8 +29,6 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {
-
-    private final AuthService authService;
     private final CompanyService companyService;
     private final HubService hubService;
     private final HubMovementService hubMovementService;
@@ -190,29 +187,9 @@ public class DeliveryService {
             List<DeliveryRouteRecord> routeRecords = delivery.getRouteRecords();
             List<DeliveryCompanyRouteRecord> companyRouteRecords = delivery.getCompanyRouteRecords();
 
-            boolean hasPermission = false;
-
-            for (DeliveryRouteRecord routeRecord : routeRecords) {
-                if (routeRecord.getDeliveryManager() != null && routeRecord.getDeliveryManager().getId().equals(userId)) {
-                    hasPermission = true;
-                    break;
-                }
-            }
-
-            if (!hasPermission) {
-                for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
-                    if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
-                        hasPermission = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!hasPermission) {
-                throw new IllegalArgumentException("조회 권한이 없습니다.");
-            }
-
+            validateDeliveryManagerManagedDelivery(routeRecords, companyRouteRecords, userId);
         }
+
         return DeliveryResponse.of(delivery);
     }
 
@@ -226,8 +203,20 @@ public class DeliveryService {
 
     @Transactional
     public void updateDeliveryAddress(UUID deliveryId, DeliveryAddressUpdateDto request, UUID userId, String role) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        }
+
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
+        if (role.equals("COMPANY_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDeliveryCompanyRouteRecord(delivery.getCompanyRouteRecords(), userId);
+        }
 
         if (delivery.isDeleted()) {
             throw new IllegalStateException("삭제된 배송은 수정할 수 없습니다.");
@@ -273,8 +262,20 @@ public class DeliveryService {
 
     @Transactional
     public void updateRecipient(UUID deliveryId, String recipient, UUID userId, String role) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        }
+
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
+        if (role.equals("COMPANY_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDeliveryCompanyRouteRecord(delivery.getCompanyRouteRecords(), userId);
+        }
 
         if (delivery.isDeleted()) {
             throw new IllegalArgumentException("삭제된 배송에는 수령인을 입력할 수 없습니다.");
@@ -299,17 +300,7 @@ public class DeliveryService {
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
 
         if (role.equals("HUB_MANAGER")) {
-            List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
-                    .map(hubsPage -> hubsPage.getContent())
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .filter(hub -> hub.getHubManagerId().equals(userId))
-                    .map(HubResponseDto::getHubId)
-                    .toList();
-
-            if (!hubIdList.contains(delivery.getDepartureHubId()) && !hubIdList.contains(delivery.getArrivalHubId())) {
-                throw new IllegalArgumentException("삭제 권한이 없습니다.");
-            }
+            validateManagedHub(delivery, userId);
         }
 
         delivery.markAsDeleted(userId);
@@ -317,10 +308,22 @@ public class DeliveryService {
 
     @Transactional
     public UUID updateRouteRecord(UUID deliveryRouteId, DeliveryRouteRecordUpdateDto request, UUID userId, String role) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("COMPANY_DELIVERY_MANAGER")) {
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        }
+
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
+        if (role.equals("HUB_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDeliveryRouterRecord(delivery.getRouteRecords(), userId);
+        }
 
         DeliveryHubStatus newStatus = null;
         if (request.getCurrentStatus() != null) {
@@ -347,10 +350,22 @@ public class DeliveryService {
 
     @Transactional
     public UUID updateRouteRecordState(UUID deliveryRouteId, String updateStatus, UUID userId, String role) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("COMPANY_DELIVERY_MANAGER")) {
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        }
+
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
+        if (role.equals("HUB_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDeliveryRouterRecord(delivery.getRouteRecords(), userId);
+        }
 
         DeliveryHubStatus newStatus = DeliveryHubStatus.valueOf(updateStatus);
 
@@ -499,7 +514,6 @@ public class DeliveryService {
         if (intermediateHubId.equals(arrivalHubId)) {
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, arrivalHubId, movementResponse.getTimeTravel(), movementResponse.getDistance()));
         } else {
-            // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
             HubData departureHub = hubService.getHub(departureHubId, "MASTER").getData();
             HubData intermediateHub = hubService.getHub(intermediateHubId, "MASTER").getData();
             HubData arrivalHub = hubService.getHub(arrivalHubId, "MASTER").getData();
@@ -605,60 +619,82 @@ public class DeliveryService {
         }
     }
 
+    private void validateManagedHub(Delivery delivery, UUID userId) {
+        List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
+                .map(hubsPage -> hubsPage.getContent())
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(hub -> hub.getHubManagerId().equals(userId))
+                .map(HubResponseDto::getHubId)
+                .toList();
+
+        if (!hubIdList.contains(delivery.getDepartureHubId()) && !hubIdList.contains(delivery.getArrivalHubId())) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+    private void validateDeliveryManagerManagedDelivery(List<DeliveryRouteRecord> routeRecords, List<DeliveryCompanyRouteRecord> companyRouteRecords, UUID userId) {
+        boolean hasPermission = false;
+
+        for (DeliveryRouteRecord routeRecord : routeRecords) {
+            if (routeRecord.getDeliveryManager() != null && routeRecord.getDeliveryManager().getId().equals(userId)) {
+                hasPermission = true;
+                break;
+            }
+        }
+
+        if (!hasPermission) {
+            for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
+                if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
+                    hasPermission = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasPermission) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+    private void validateDeliveryManagerManagedDeliveryRouterRecord(List<DeliveryRouteRecord> routeRecords, UUID userId) {
+        boolean hasPermission = false;
+
+        for (DeliveryRouteRecord routeRecord : routeRecords) {
+            if (routeRecord.getDeliveryManager() != null && routeRecord.getDeliveryManager().getId().equals(userId)) {
+                hasPermission = true;
+                break;
+            }
+        }
+
+
+        if (!hasPermission) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+    private void validateDeliveryManagerManagedDeliveryCompanyRouteRecord(List<DeliveryCompanyRouteRecord> companyRouteRecords, UUID userId) {
+        boolean hasPermission = false;
+
+        for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
+            if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
+                hasPermission = true;
+                break;
+            }
+        }
+
+        if (!hasPermission) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+
     public LocationData fetchCoordinates(String address) {
         return geocodingApiService.getCoordinates(address);
     }
 
     public RouteEstimateData fetchRouteEstimate(String start, String goal) {
         return directionsApiService.getRouteEstimateData(start, goal);
-    }
-
-    private UUID getUserIdFromToken(String token) {
-        return UUID.randomUUID();
-    }
-
-    private boolean validateDeliveryManagerAssignedHub(Delivery delivery, UUID userId, String role) {
-
-        if (!"DELIVERY_MANAGER".equals(role)) {
-            return true;
-        }
-
-        DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFalse(userId)
-                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
-
-        UUID managerAssignedHubId = manager.getAssignedHubId();
-        UUID departureHubId = delivery.getDepartureHubId();
-        UUID arrivalHubId = delivery.getArrivalHubId();
-
-        return managerAssignedHubId.equals(departureHubId) || managerAssignedHubId.equals(arrivalHubId);
-    }
-
-    private boolean validateHubManagerAssignedHub(Delivery delivery, UUID userId, String role) {
-        if (!"HUB_MANAGER".equals(role)) {
-            return true;
-        }
-
-        UUID departureHubId = delivery.getDepartureHubId();
-        UUID arrivalHubId = delivery.getArrivalHubId();
-
-        HubData departureHub = hubService.getHub(departureHubId, "").getData();
-        HubData arrivalHub = hubService.getHub(arrivalHubId, "").getData();
-
-        return userId.equals(departureHub.getHubManagerId()) || userId.equals(arrivalHub.getHubManagerId());
-    }
-
-    private void validateHubExistence(UUID hubId) {
-        try {
-            ApiResponseDto<HubData> response = hubService.getHub(hubId, "");
-            HubData hubData = response.getData();
-
-            if (hubData == null) {
-                throw new IllegalArgumentException("허브 정보를 찾을 수 없습니다.");
-            }
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("허브 검증에 실패했습니다.", e);
-        }
     }
 
     private UUID validateHubExistence(String province, String city) {
