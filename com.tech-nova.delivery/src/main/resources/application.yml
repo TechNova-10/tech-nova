@@ -33,6 +33,9 @@ naver:
     api-key-id: ${NAVER_API_KEY_ID}
     api-key: ${NAVER_API_KEY}
 
+google:
+  api:
+    key: AIzaSyBM53zRSF5wxFe0DP86mqGkEO9382PUU0w
 #management:
 #  zipkin:
 #    tracing:

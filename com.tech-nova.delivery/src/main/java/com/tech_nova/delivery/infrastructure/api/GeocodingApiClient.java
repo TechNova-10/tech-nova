@@ -1,8 +1,8 @@
 package com.tech_nova.delivery.infrastructure.api;
 
 import com.tech_nova.delivery.application.dto.LocationData;
-import com.tech_nova.delivery.application.service.MapService;
-import com.tech_nova.delivery.infrastructure.dto.NaverApiResponse;
+import com.tech_nova.delivery.application.service.GeocodingApiService;
+import com.tech_nova.delivery.infrastructure.dto.GeocodingApiResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
-public class GeocodingApiClient implements MapService {
+public class GeocodingApiClient implements GeocodingApiService {
 
     private final WebClient webClient;
 
@@ -42,9 +42,8 @@ public class GeocodingApiClient implements MapService {
                     .header("x-ncp-apigw-api-key", apiKey)
                     .header("Accept", "application/json")
                     .retrieve()
-                    .bodyToMono(NaverApiResponse.class)
+                    .bodyToMono(GeocodingApiResponse.class)
                     .map(response -> {
-                        System.out.println(response);
                         if (!response.getAddresses().isEmpty()) {
                             var addressData = response.getAddresses().get(0);
                             double x = Double.parseDouble(addressData.getX());
