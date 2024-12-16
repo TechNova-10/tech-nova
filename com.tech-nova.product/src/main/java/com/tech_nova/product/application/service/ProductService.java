@@ -5,7 +5,9 @@ import com.tech_nova.product.application.dto.ProductResponse;
 import com.tech_nova.product.domain.model.Product;
 import com.tech_nova.product.domain.repository.ProductRepository;
 import com.tech_nova.product.infrastructure.client.AuthServiceClient;
-//import com.tech_nova.product.infrastructure.client.CompanyServiceClient;
+import com.tech_nova.product.infrastructure.client.CompanyServiceClient;
+import com.tech_nova.product.infrastructure.dto.CompanyApiResponse;
+import com.tech_nova.product.infrastructure.dto.CompanyResponse;
 import com.tech_nova.product.presentation.controller.ProductController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +17,7 @@ import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -22,12 +25,12 @@ import java.util.UUID;
 public class ProductService {
 
     private final ProductRepository productRepository;
-//    private final CompanyServiceClient companyServiceClient;
+    private final CompanyServiceClient companyServiceClient;
     private final AuthServiceClient authServiceClient;
 
     @Transactional
     public void createProduct(ProductRequest request) {
-//        validateIds(request.getHubId(), request.getCompanyId());
+        validateIds(request.getHubId(), request.getCompanyId());
         // validateUserRole(token, request.getHubId(), request.getCompanyId());
 
         Product product = Product.builder()
@@ -43,11 +46,11 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductResponse updateProduct(String token, UUID productId, ProductRequest request) {
+    public ProductResponse updateProduct(UUID productId, ProductRequest request) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품 존재 X"));
 
-//        validateIds(request.getHubId(), request.getCompanyId());
+        validateIds(request.getHubId(), request.getCompanyId());
         // validateUserRole(token, request.getHubId(), request.getCompanyId());
 
         product.update(request.getName(), request.getDescription(), request.getPrice(), request.getStock());
@@ -57,7 +60,7 @@ public class ProductService {
     }
 
     @Transactional
-    public void deleteProduct(String token, UUID productId) {
+    public void deleteProduct( UUID productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품 존재 X"));
 
@@ -87,16 +90,20 @@ public class ProductService {
         );
     }
 
-//    private void validateIds(UUID hubId, UUID companyId) {
-//        if (!companyServiceClient.isCompanyIdValid(companyId.toString())) {
-//            throw new IllegalArgumentException("유효하지 않은 업체 Id!");
-//        }
-//        if (!companyServiceClient.isHubIdValid(hubId.toString())) {
-//            throw new IllegalArgumentException("유효하지 않은 허브 Id!");
-//        }
-//    }
+    private void validateIds(UUID hubId, UUID companyId) {
 
-    private void validateUserRole(String token, UUID hubId, UUID companyId) {
+            CompanyResponse companyResponse = companyServiceClient.getCompanyById(companyId).getData();
+            List<CompanyResponse> hubResponses = companyServiceClient.getCompaniesByHubId(hubId).getData();
+
+            System.out.println("Company Response: " + companyResponse);
+            System.out.println("Hub Responses: " + hubResponses);
+            if (companyResponse == null || hubResponses.isEmpty()) {
+                throw new IllegalArgumentException("유효하지 않은 업체 Id 또는 허브 Id!");
+            }
+        }
+    }
+
+//    private void validateUserRole(String token, UUID hubId, UUID companyId) {
         // String userRole = authServiceClient.getUserRole(token);
 
         // if ("MASTER".equals(userRole)) {
@@ -112,5 +119,5 @@ public class ProductService {
         // if ("COMPANY".equals(userRole) && !companyServiceClient.isCompanyIdValid(companyId.toString())) {
         //     throw new IllegalArgumentException("해당 회사의 제품을 관리할 수 있는 권한이 없습니다.");
         // }
-    }
-}
+//    }
+//}
