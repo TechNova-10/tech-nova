@@ -6,6 +6,7 @@ import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,5 +23,10 @@ public interface DeliveryManagerRepositoryImpl extends JpaRepository<DeliveryMan
     @Query("SELECT COUNT(dm) FROM DeliveryManager dm WHERE dm.assignedHubId = :assignedHubId AND dm.managerRole = :role AND dm.isDeleted = false")
     int countCompanyManagers(UUID assignedHubId, DeliveryManagerRole role);
 
+    @Query("SELECT dm FROM DeliveryManager dm WHERE dm.managerRole = :type AND dm.isDeleted = false")
+    List<DeliveryManager> findAllByRoleAndIsDeletedFalse(DeliveryManagerRole role);
+
+    @Query("SELECT dm FROM DeliveryManager dm WHERE dm.managerRole = :type AND dm.assignedHubId = :hubId AND dm.isDeleted = false")
+    List<DeliveryManager> findAllByRoleAndHubIdAndIsDeletedFalse(DeliveryManagerRole role, UUID hubId);
 }
 
