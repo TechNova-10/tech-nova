@@ -2,11 +2,13 @@ package com.tech_nova.delivery.application.service;
 
 import com.tech_nova.delivery.application.dto.DeliveryManagerDto;
 import com.tech_nova.delivery.application.dto.HubData;
+import com.tech_nova.delivery.application.dto.UserData;
 import com.tech_nova.delivery.application.dto.res.DeliveryManagerResponse;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
+import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +26,19 @@ public class DeliveryManagerService {
     private final DeliveryManagerRepository deliveryManagerRepository;
 
     @Transactional
-    public UUID createDeliveryManager(DeliveryManagerDto request) {
+    public UUID createDeliveryManager(DeliveryManagerDto request, UUID userId, String role) {
+        if (!role.equals("HUB_MANAGER") && !role.equals("MASTER")) {
+            throw new AuthenticationException("배송담당자를 생성할 권한이 없습니다.");
+        }
+
+        if (role.equals("HUB_MANAGER")) {
+            ApiResponseDto<HubData> response = hubService.getHub(request.getAssignedHubId(), "MASTER");
+            HubData hubData = response.getData();
+            if (!hubData.getHubManagerId().equals(userId)) {
+                throw new AuthenticationException("담당 허브 외 다른 허브에 속하는 배송 담당자를 생성할 권한이 없습니다.");
+            }
+        }
+
         if (deliveryManagerRepository.existsByManagerUserId(request.getManagerUserId())) {
             throw new IllegalArgumentException("해당 사용자는 이미 등록되어 있습니다.");
         }
@@ -56,10 +70,20 @@ public class DeliveryManagerService {
 
         deliveryManagerRepository.save(deliveryManager);
 
+        authService.updateUserRole(request.getManagerUserId(), request.getManagerRole(), userId, role);
+
         return DeliveryManagerResponse.of(deliveryManager).getId();
     }
 
-    public DeliveryManagerResponse getDeliveryManager(UUID deliveryManagerId) {
+    @Transactional(readOnly = true)
+    public DeliveryManagerResponse getDeliveryManager(UUID deliveryManagerId, UUID userId, String role) {
+        if (role.equals("MASTER")) {
+            DeliveryManager manager = deliveryManagerRepository.findById(deliveryManagerId)
+                    .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+            return DeliveryManagerResponse.of(manager);
+        }
+
         DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFalse(deliveryManagerId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
 
@@ -102,10 +126,7 @@ public class DeliveryManagerService {
 
     private void validateHubExistence(String token, UUID hubId) {
         try {
-            // TODO 추후 주석처리된 코드를 적용
-            // String userRole = authService.getUserRole(token);
-            String userRole = "MASTER";
-            ApiResponseDto<HubData> response = hubService.getHub(hubId, userRole);
+            ApiResponseDto<HubData> response = hubService.getHub(hubId, "MASTER");
             HubData hubData = response.getData();
 
             if (hubData == null) {
@@ -115,5 +136,9 @@ public class DeliveryManagerService {
         } catch (Exception e) {
             throw new IllegalArgumentException("허브 검증에 실패했습니다.", e);
         }
+    }
+
+    private UserData getUser(UUID searchUserId, UUID userId, String role) {
+        return authService.getUser(searchUserId, userId, role).getData();
     }
 }
