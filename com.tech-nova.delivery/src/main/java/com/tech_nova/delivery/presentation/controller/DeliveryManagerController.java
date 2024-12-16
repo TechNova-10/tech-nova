@@ -5,6 +5,7 @@ import com.tech_nova.delivery.application.service.DeliveryManagerService;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.request.DeliveryManagerRequest;
 import com.tech_nova.delivery.presentation.request.DeliveryManagerSearchRequest;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class DeliveryManagerController {
     private final DeliveryManagerService deliveryManagerService;
 
+    @Operation(summary = "배송 담당자 생성")
     @PostMapping
     public ResponseEntity<ApiResponseDto<UUID>> createDeliveryManager(
             @RequestBody DeliveryManagerRequest request,
@@ -29,6 +31,7 @@ public class DeliveryManagerController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery Manager created successfully", deliveryManagerId));
     }
 
+    @Operation(summary = "배송 담당자 조회")
     @GetMapping("/{delivery_manager_id}")
     public ResponseEntity<ApiResponseDto<DeliveryManagerResponse>> getDeliveryManager(
             @PathVariable("delivery_manager_id") UUID deliveryManagerId,
@@ -39,6 +42,7 @@ public class DeliveryManagerController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery Manager created successfully", deliveryManager));
     }
 
+    @Operation(summary = "배송 담당자 목록 조회")
     @GetMapping
     public ResponseEntity<ApiResponseDto<Page<DeliveryManagerResponse>>> getAllDeliveryManagers(
             DeliveryManagerSearchRequest deliveryManagerSearchRequest,
