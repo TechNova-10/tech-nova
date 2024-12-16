@@ -316,22 +316,14 @@ public class DeliveryService {
 
     @Transactional
     public UUID updateRouteRecord(UUID deliveryRouteId, DeliveryRouteRecordUpdateDto request, UUID userId, String role) {
-        if (role.equals("COMPANY_MANAGER") || role.equals("COMPANY_DELIVERY_MANAGER")) {
-            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        if (!role.equals("MASTER")) {
+            throw new IllegalArgumentException("해당 API에 대한 권한이 없습니다.");
         }
 
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
-
-        if (role.equals("HUB_MANAGER")) {
-            validateManagedHub(delivery, userId);
-        }
-
-        if (role.equals("HUB_DELIVERY_MANAGER")) {
-            validateDeliveryManagerManagedDeliveryRouterRecord(delivery.getRouteRecords(), userId);
-        }
 
         DeliveryHubStatus newStatus = null;
         if (request.getCurrentStatus() != null) {
