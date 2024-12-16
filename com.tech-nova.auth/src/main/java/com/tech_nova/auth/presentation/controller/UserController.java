@@ -24,8 +24,7 @@ public class UserController {
         return ResponseEntity.ok(ApiResponseDto.success("getUser successfully", user));
     }
 
-
-    @PatchMapping("/{user_id}/role")
+    @PutMapping("/{user_id}/role")
     public ResponseEntity<ApiResponseDto<Void>> updateUserRole(
             @PathVariable("user_id") UUID searchUserId,
             @RequestParam(name = "role") String updateRole,
