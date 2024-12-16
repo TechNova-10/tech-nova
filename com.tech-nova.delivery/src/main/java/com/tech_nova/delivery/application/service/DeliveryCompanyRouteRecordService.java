@@ -14,6 +14,7 @@ import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordReposi
 import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepositoryCustom;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
+import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.request.DeliveryRouteSearchRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -350,10 +351,19 @@ public class DeliveryCompanyRouteRecordService {
 
     @Transactional
     public void deleteCompanyRouteRecord(UUID deliveryRouteId, UUID userId, String role) {
+        if (!role.equals("HUB_MANAGER") && !role.equals("MASTER")) {
+            throw new AuthenticationException("삭제 권한이 없습니다.");
+        }
+
         DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
         delivery.deleteCompanyRouteRecordState(deliveryRouteId, userId);
     }
 

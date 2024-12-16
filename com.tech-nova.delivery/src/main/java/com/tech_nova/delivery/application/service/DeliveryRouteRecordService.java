@@ -12,6 +12,7 @@ import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryRouteRecordRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryRouteRecordRepositoryCustom;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
+import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.request.DeliveryRouteSearchRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -50,7 +51,6 @@ public class DeliveryRouteRecordService {
                 pageable.getSort()
         );
 
-        // TODO 권한 검증 추가
         return deliveryRouteRecordRepositoryCustom.searchDeliveryRouteRecords("MASTER", deliveryRouteSearchRequest, customPageable).map(DeliveryRouteRecordResponse::of);
 
     }
@@ -92,10 +92,19 @@ public class DeliveryRouteRecordService {
 
     @Transactional
     public void deleteRouteRecord(UUID deliveryRouteId, UUID userId, String role) {
+        if (!role.equals("HUB_MANAGER") && !role.equals("MASTER")) {
+            throw new AuthenticationException("삭제 권한이 없습니다.");
+        }
+
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
         delivery.deleteRouteRecordState(deliveryRouteId, userId);
     }
 
