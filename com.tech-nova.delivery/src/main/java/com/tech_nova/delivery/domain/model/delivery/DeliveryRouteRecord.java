@@ -5,6 +5,8 @@ import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Entity
@@ -102,6 +104,16 @@ public class DeliveryRouteRecord extends Timestamped {
 
     public void updateCurrentStatus(DeliveryHubStatus currentStatus) {
         this.currentStatus = currentStatus;
+    }
+
+    public void updateRealDistanceAndRealTime() {
+        LocalDateTime updateAt = this.getUpdateAt();
+        LocalDateTime currentTime = LocalDateTime.now();
+
+        long differenceInMillis = ChronoUnit.MILLIS.between(updateAt, currentTime);
+
+        this.realDistance = this.expectedDistance;
+        this.realTime = (double) differenceInMillis;
     }
 
     public void updateDeliveryManager(DeliveryManager deliveryManager) {
