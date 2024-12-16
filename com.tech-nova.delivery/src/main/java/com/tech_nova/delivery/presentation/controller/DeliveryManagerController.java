@@ -42,6 +42,18 @@ public class DeliveryManagerController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery Manager created successfully", deliveryManager));
     }
 
+    @Operation(summary = "배송 담당자 수정")
+    @PatchMapping("/{delivery_manager_id}")
+    public ResponseEntity<ApiResponseDto<Void>> updateDeliveryManager(
+            @PathVariable("delivery_manager_id") UUID deliveryManagerId,
+            @RequestBody DeliveryManagerRequest request,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
+    ) {
+        deliveryManagerService.updateDeliveryManager(deliveryManagerId, request, userId, role);
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery Manager created successfully"));
+    }
+
     @Operation(summary = "배송 담당자 목록 조회")
     @GetMapping
     public ResponseEntity<ApiResponseDto<Page<DeliveryManagerResponse>>> getAllDeliveryManagers(
