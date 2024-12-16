@@ -5,6 +5,8 @@ import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Entity
@@ -33,15 +35,24 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
     @Column(nullable = false)
     private UUID recipientCompanyId;
 
+    @Column(nullable = false)
+    private String province;
+
+    @Column(nullable = false)
+    private String city;
+
+    @Column(nullable = false)
+    private String district;
+
+    @Column(nullable = false)
+    private String roadName;
+
+    @Column
+    private String detailAddress;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DeliveryCompanyStatus currentStatus;
-
-    @Column(nullable = false)
-    private Double latitude;
-
-    @Column(nullable = false)
-    private Double longitude;
 
     @Column
     private Integer deliveryOrderSequence;
@@ -66,9 +77,12 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
             DeliveryManager deliveryManager,
             UUID departureHubId,
             UUID recipientCompanyId,
+            String province,
+            String city,
+            String district,
+            String roadName,
+            String detailAddress,
             DeliveryCompanyStatus currentStatus,
-            double latitude,
-            double longitude,
             Double expectedDistance,
             Double expectedTime
     ) {
@@ -77,9 +91,12 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
                 .deliveryManager(deliveryManager)
                 .departureHubId(departureHubId)
                 .recipientCompanyId(recipientCompanyId)
+                .province(province)
+                .city(city)
+                .district(district)
+                .roadName(roadName)
+                .detailAddress(detailAddress)
                 .currentStatus(currentStatus)
-                .latitude(latitude)
-                .longitude(longitude)
                 .expectedDistance(expectedDistance)
                 .expectedTime(expectedTime)
                 .build();
@@ -113,8 +130,22 @@ public class DeliveryCompanyRouteRecord extends Timestamped {
         this.currentStatus = currentStatus;
     }
 
+    public void updateRealDistanceAndRealTime() {
+        LocalDateTime updateAt = this.getUpdateAt();
+        LocalDateTime currentTime = LocalDateTime.now();
+
+        long differenceInMillis = ChronoUnit.MILLIS.between(updateAt, currentTime);
+
+        this.realDistance = this.expectedDistance;
+        this.realTime = (double) differenceInMillis;
+    }
+
     public void updateDeliveryManager(DeliveryManager deliveryManager) {
         this.deliveryManager = deliveryManager;
+    }
+
+    public void updateDeliveryOrderSequence(int sequence) {
+        this.deliveryOrderSequence = sequence;
     }
 
     public void markAsUpdated(UUID updatedBy) {

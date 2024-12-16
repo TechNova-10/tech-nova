@@ -7,10 +7,7 @@ import com.tech_nova.delivery.application.dto.res.DeliveryRouteRecordResponse;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
-import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryRepository;
-import com.tech_nova.delivery.domain.repository.DeliveryRouteRecordRepository;
+import com.tech_nova.delivery.domain.repository.*;
 import com.tech_nova.delivery.domain.service.DeliveryManagerAssignmentService;
 import com.tech_nova.delivery.infrastructure.dto.CompanyResponse;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
@@ -19,10 +16,15 @@ import com.tech_nova.delivery.infrastructure.dto.MovementResponse;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
+import com.tech_nova.delivery.presentation.request.DeliverySearchRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
 import java.util.*;
 
 @Service
@@ -33,24 +35,30 @@ public class DeliveryService {
     private final CompanyService companyService;
     private final HubService hubService;
     private final HubMovementService hubMovementService;
-    private final MapService mapService;
+    private final GeocodingApiService geocodingApiService;
+    private final DirectionsApiService directionsApiService;
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryManagerRepository deliveryManagerRepository;
     private final DeliveryRouteRecordRepository deliveryRouteRecordRepository;
     private final DeliveryCompanyRouteRecordRepository deliveryCompanyRouteRecordRepository;
+    private final DeliveryRepositoryCustom deliveryRepositoryCustom;
 
     private final DeliveryManagerAssignmentService deliveryManagerAssignmentService;
 
     @Transactional
-    public UUID createDelivery(DeliveryDto request) {
+    public UUID createDelivery(DeliveryDto request, String orderOriginToken) {
+        // TODO 권한 검증 추가 예정
+        // if (orderOriginToken == null) {
+        //     validateMaster(token);
+        // }
+        System.out.println("orderOriginToken" + orderOriginToken);
+
         if (deliveryRepository.existsByOrderIdAndIsDeletedFalse(request.getOrderId())) {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
 
-        // 요청 업체 ID
         UUID recipientCompanyId = request.getRecipientCompanyId();
-        // CompanyService로 업체 정보 조회후 소속 허브 아이디 가져와 출발 허브로 지정
         CompanyResponse recipientCompany = companyService.getCompanyById(recipientCompanyId).getData();
         UUID departureHubId = recipientCompany.getHubId();
         UUID arrivalHubId = validateHubExistence(request.getProvince(), request.getCity());
@@ -172,7 +180,7 @@ public class DeliveryService {
                 request.getDetailAddress()
         );
 
-        createDelivery(dto);
+        createDelivery(dto, "deliveryApp-001");
     }
 
     @Transactional
@@ -219,8 +227,8 @@ public class DeliveryService {
 
         DeliveryManager deliveryManager = null;
         if (request.getDeliveryManagerId() != null) {
-            deliveryManager = deliveryManagerRepository.findById(request.getDeliveryManagerId())
-                    .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
+            deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(request.getDeliveryManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
         }
 
         UUID updatedBy = getUserIdFromToken("");
@@ -256,6 +264,30 @@ public class DeliveryService {
     }
 
     @Transactional
+    public UUID updateCompanyRouteRecordDeliveryManager(UUID deliveryRouteId, UUID deliveryManagerId) {
+        DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        if (delivery.getCurrentStatus().equals(DeliveryStatus.DELIVERY_COMPLETED)) {
+            throw new IllegalArgumentException("완료된 배송은 배송 담당자를 변경할 수 없습니다.");
+        }
+
+        DeliveryManager deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(deliveryManagerId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+        if (!deliveryManager.getManagerRole().equals(DeliveryManagerRole.COMPANY_DELIVERY_MANAGER)) {
+            throw new IllegalArgumentException("허브 배송 담당자는 업체 배송에 배정할 수 없습니다.");
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateCompanyRouteRecordDeliveryManager(deliveryRouteId, deliveryManager, updatedBy);
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
     public UUID updateCompanyRouteRecord(UUID deliveryRouteId, DeliveryCompanyRouteRecordUpdateDto request) {
         DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
@@ -264,8 +296,8 @@ public class DeliveryService {
 
         DeliveryManager deliveryManager = null;
         if (request.getDeliveryManagerId() != null) {
-            deliveryManager = deliveryManagerRepository.findById(request.getDeliveryManagerId())
-                    .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
+            deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(request.getDeliveryManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
         }
 
         DeliveryCompanyStatus newStatus = null;
@@ -290,6 +322,30 @@ public class DeliveryService {
 
         UUID updatedBy = getUserIdFromToken("");
         delivery.updateCompanyRouteRecordState(deliveryRouteId, newStatus, updatedBy);
+
+        return routeRecord.getId();
+    }
+
+    @Transactional
+    public UUID updateRouteRecordDeliveryManager(UUID deliveryRouteId, UUID deliveryManagerId) {
+        DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
+
+        Delivery delivery = routeRecord.getDelivery();
+
+        if (delivery.getCurrentStatus().equals(DeliveryStatus.DELIVERY_COMPLETED)) {
+            throw new IllegalArgumentException("완료된 배송은 배송 담당자를 변경할 수 없습니다.");
+        }
+
+        DeliveryManager deliveryManager = deliveryManagerRepository.findByIdAndIsDeletedFalse(deliveryManagerId)
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+
+        if (!deliveryManager.getManagerRole().equals(DeliveryManagerRole.HUB_DELIVERY_MANAGER)) {
+            throw new IllegalArgumentException("업체 배송 담당자는 허브 배송에 배정할 수 없습니다.");
+        }
+
+        UUID updatedBy = getUserIdFromToken("");
+        delivery.updateRouteRecordDeliveryManager(deliveryRouteId, deliveryManager, updatedBy);
 
         return routeRecord.getId();
     }
@@ -329,20 +385,27 @@ public class DeliveryService {
 
         String city = delivery.getCity();
         String roadName = delivery.getRoadName();
-        String fullAddress = city + " " + roadName;
-        LocationData coordinates = fetchCoordinates(fullAddress);
+        LocationData coordinates = fetchCoordinates(city + " " + roadName);
 
-        // 마지막 허브 -> 업체의 예상 거리, 시간 계산 필요
+        HubData departureHub = hubService.getHub(delivery.getArrivalHubId(), "MASTER").getData();
+
+        String departureEstimate = departureHub.getLongitude() + "," + departureHub.getLatitude();
+        String arrivalEstimate = coordinates.getLongitude() + "," + coordinates.getLatitude();
+        RouteEstimateData routeEstimateData = fetchRouteEstimate(departureEstimate, arrivalEstimate);
+
         DeliveryCompanyRouteRecord companyRouteRecord = DeliveryCompanyRouteRecord.create(
                 delivery,
                 deliveryManager,
                 delivery.getArrivalHubId(),
                 delivery.getRecipientCompanyId(),
+                delivery.getProvince(),
+                delivery.getCity(),
+                delivery.getDistrict(),
+                delivery.getRoadName(),
+                delivery.getDetailAddress(),
                 DeliveryCompanyStatus.COMPANY_WAITING,
-                coordinates.getLatitude(),
-                coordinates.getLongitude(),
-                (double) 0,
-                (double) 0
+                (double) routeEstimateData.getDuration(),
+                (double) routeEstimateData.getDistance()
         );
 
         delivery.addCompanyRouteRecord(companyRouteRecord);
@@ -373,22 +436,47 @@ public class DeliveryService {
         UUID intermediateHubId = movementResponse.getIntermediateHubId();
         UUID arrivalHubId = movementResponse.getArrivalHubId();
 
-        System.out.println("departureHubId: " + departureHubId);
-        System.out.println("intermediateHubId: " + intermediateHubId);
-        System.out.println("arrivalHubId: " + arrivalHubId);
-
         List<HubMovementData> hubMovementDatas = new ArrayList<>();
 
-        if (departureHubId.equals(intermediateHubId)) {
+        if (intermediateHubId.equals(arrivalHubId)) {
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, arrivalHubId, movementResponse.getTimeTravel(), movementResponse.getDistance()));
         } else {
-            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, intermediateHubId, 160.0, 100.0));
-            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), intermediateHubId, arrivalHubId, 160.0, 200.0));
+            // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
+            HubData departureHub = hubService.getHub(departureHubId, "MASTER").getData();
+            HubData intermediateHub = hubService.getHub(intermediateHubId, "MASTER").getData();
+            HubData arrivalHub = hubService.getHub(arrivalHubId, "MASTER").getData();
+
+            String departureEstimate = departureHub.getLongitude() + "," + departureHub.getLatitude();
+            String intermediateEstimate = intermediateHub.getLongitude() + "," + intermediateHub.getLatitude();
+            String arrivalEstimate = arrivalHub.getLongitude() + "," + arrivalHub.getLatitude();
+
+            RouteEstimateData routeEstimateData1 = fetchRouteEstimate(departureEstimate, intermediateEstimate);
+            RouteEstimateData routeEstimateData2 = fetchRouteEstimate(intermediateEstimate, arrivalEstimate);
+
+            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, intermediateHubId, (double) routeEstimateData1.getDuration(), (double) routeEstimateData1.getDistance()));
+            hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), intermediateHubId, arrivalHubId, (double) routeEstimateData2.getDuration(), (double) routeEstimateData2.getDistance()));
         }
 
-        System.out.println("hubMovementDatas size: " + hubMovementDatas.size());
-
         return hubMovementDatas;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DeliveryResponse> getDeliverys(DeliverySearchRequest deliveryRouteSearchRequest, Pageable pageable) {
+
+        int pageSize =
+                (pageable.getPageSize() == 30
+                        || pageable.getPageSize() == 50)
+                        ? pageable.getPageSize() : 10;
+
+        Pageable customPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageSize,
+                pageable.getSort()
+        );
+
+        // TODO 권한 검증 추가
+        return deliveryRepositoryCustom.searchDelivery("MASTER", deliveryRouteSearchRequest, customPageable).map(DeliveryResponse::of);
+
     }
 
     private void validateRoleForHubAssignment(DeliveryManager deliveryManager) {
@@ -450,7 +538,11 @@ public class DeliveryService {
     }
 
     public LocationData fetchCoordinates(String address) {
-        return mapService.getCoordinates(address);
+        return geocodingApiService.getCoordinates(address);
+    }
+
+    public RouteEstimateData fetchRouteEstimate(String start, String goal) {
+        return directionsApiService.getRouteEstimateData(start, goal);
     }
 
     // TODO: 추후 인증 완성 시 토큰 내 정보로 ID 가져올 예정
@@ -494,11 +586,15 @@ public class DeliveryService {
         return userId.equals(departureHub.getHubManagerId()) || userId.equals(arrivalHub.getHubManagerId());
     }
 
-    private boolean validateMaster(String token, Delivery delivery) {
+    private UUID validateMaster(String token) throws AccessDeniedException {
         UUID userId = authService.getUserId(token);
         String userRole = authService.getUserRole(token);
 
-        return "HUB_MANAGER".equals(userRole);
+        if (!userRole.equals("MASTER")) {
+            throw new AccessDeniedException("이 작업을 수행하려면 MASTER 권한이 필요합니다.");
+        }
+
+        return userId;
     }
 
     private void validateHubExistence(String token, UUID hubId) {
@@ -523,18 +619,19 @@ public class DeliveryService {
 
         if ("경기도".equals(province)) {
             String[] gyeonggiNorthCities = {
-                    "고양시", "파주시", "의정부시", "동두천시", "연천군", "양주시", "포천시", "가평군", "김포시"
+                    "고양시", "김포시", "부천시", "구리시", "남양주시", "동두천시", "양주시", "의정부시", "파주시",
+                    "포천시", "가평군", "연쳔군"
             };
 
             String[] gyeonggiSouthCities = {
-                    "수원시", "성남시", "안양시", "광명시", "안성시", "화성시", "용인시", "오산시", "평택시", "하남시",
-                    "여주시", "이천시", "구리시", "남양주시", "시흥시"
+                    "과천시", "광명시", "광주시", "군포시", "부천시", "성남시", "수원시", "시흥시", "안산시", "안성시",
+                    "안양시", "여주시", "오산시", "용인시", "의왕시", "이천시", "평택시", "하남시", "화성시"
             };
 
             if (Arrays.asList(gyeonggiNorthCities).contains(city)) {
-                hubSearchDto.setName("경기 북부 센터");
+                hubSearchDto.setName("경기도 북부 센터");
             } else if (Arrays.asList(gyeonggiSouthCities).contains(city)) {
-                hubSearchDto.setName("경기 남부 센터");
+                hubSearchDto.setName("경기도 남부 센터");
             } else {
                 hubSearchDto.setProvince("경기도");
             }

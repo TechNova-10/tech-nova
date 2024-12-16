@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LocationData {
-    private double longitude;
-    private double latitude;
+public class RouteEstimateData {
+    private Integer distance;
+    private Integer duration;
 }
