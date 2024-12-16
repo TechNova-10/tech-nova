@@ -13,6 +13,7 @@ import com.tech_nova.delivery.infrastructure.dto.CompanyResponse;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
 import com.tech_nova.delivery.infrastructure.dto.MovementRequestDto;
 import com.tech_nova.delivery.infrastructure.dto.MovementResponse;
+import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import com.tech_nova.delivery.presentation.request.DeliverySearchRequest;
@@ -383,6 +384,10 @@ public class DeliveryService {
 
     @Transactional
     public void createCompanyRouteRecordByDeliveryId(UUID deliveryId, UUID userId, String role) {
+        if (!role.equals("MASTER")) {
+            throw new AuthenticationException("권한이 없습니다.");
+        }
+
         Delivery delivery = deliveryRepository.findById(deliveryId).orElseThrow();
 
         createCompanyRouteRecord(delivery);
