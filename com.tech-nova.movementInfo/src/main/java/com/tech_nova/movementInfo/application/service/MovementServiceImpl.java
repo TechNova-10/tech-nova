@@ -6,6 +6,9 @@ import com.tech_nova.movementInfo.domain.model.Movement;
 import com.tech_nova.movementInfo.domain.repository.MovementRepository;
 import com.tech_nova.movementInfo.infrastructure.client.HubClient;
 import com.tech_nova.movementInfo.infrastructure.client.HubResponseDto;
+import com.tech_nova.movementInfo.presentation.exception.HubNotFoundException;
+import com.tech_nova.movementInfo.presentation.exception.MasterRoleRequiredException;
+import com.tech_nova.movementInfo.presentation.exception.MovementInfoNotFoundException;
 import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.List;
@@ -50,28 +53,22 @@ public class MovementServiceImpl implements MovementService {
     validateMasterRole(role);
 
     List<HubResponseDto> hubs = hubClient.getHubList();
-
     HubResponseDto departureHub = findHub(
         movementRequestDto.getDepartureHubId(), hubs, "출발 허브를 찾을 수 없습니다.");
     HubResponseDto arrivalHub = findHub(
         movementRequestDto.getArrivalHubId(), hubs, "도착 허브를 찾을 수 없습니다.");
-
-    String intermediateHubName = findIntermediateHub(departureHub.getName());
-
-    HubResponseDto intermediateHub = findIntermediateHubByName(intermediateHubName, hubs);
+    HubResponseDto intermediateHub = findIntermediateHubByName(
+        findIntermediateHub(departureHub.getName()), hubs);
 
     double totalDistance = calculateTotalDistance(departureHub, intermediateHub, arrivalHub);
     double expectedTime = calculateExpectedTime(totalDistance);
-
-    totalDistance = roundToTwoDecimalPlaces(totalDistance);
-    expectedTime = roundToTwoDecimalPlaces(expectedTime);
 
     Movement movement = Movement.creatMovement(
         movementRequestDto.getDepartureHubId(),
         intermediateHub.getHubId(),
         movementRequestDto.getArrivalHubId(),
-        expectedTime,
-        totalDistance,
+        roundToTwoDecimalPlaces(expectedTime),
+        roundToTwoDecimalPlaces(totalDistance),
         userId
     );
 
@@ -85,9 +82,7 @@ public class MovementServiceImpl implements MovementService {
   @Transactional(readOnly = true)
   public MovementResponseDto getMovement(UUID movementId) {
 
-    Movement movement = movementRepository.findByMovementIdAndIsDeletedFalse(movementId)
-        .orElseThrow(() -> new IllegalArgumentException("해당 정보를 찾을 수 없습니다."));
-
+    Movement movement = findActiveMovementById(movementId);
     return MovementResponseDto.of(movement);
   }
 
@@ -98,11 +93,6 @@ public class MovementServiceImpl implements MovementService {
 
     validateMasterRole(role);
     findByMovementId(movementId).deleteMovement(userId);
-  }
-
-  private Movement findByMovementId(UUID movementId) {
-    return movementRepository.findById(movementId)
-        .orElseThrow(() -> new IllegalArgumentException("해당 허브가 존재하지 않습니다."));
   }
 
   private double calculateTotalDistance(
@@ -164,7 +154,7 @@ public class MovementServiceImpl implements MovementService {
         }
       }
     }
-    throw new IllegalArgumentException("해당 데이터가 존재하지 않습니다.");
+    throw new IllegalArgumentException("데이터가 존재하지 않습니다.");
   }
 
   private HubResponseDto findIntermediateHubByName(String intermediateHubName,
@@ -172,17 +162,27 @@ public class MovementServiceImpl implements MovementService {
     return hubs.stream()
         .filter(hub -> hub.getName().equalsIgnoreCase(intermediateHubName))
         .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("해당 데이터가 존재하지 않습니다."));
+        .orElseThrow(() -> new HubNotFoundException("허브가 존재하지 않습니다."));
   }
 
   private double roundToTwoDecimalPlaces(double value) {
     return Math.round(value * 100.0) / 100.0;
   }
 
+  private Movement findByMovementId(UUID movementId) {
+    return movementRepository.findById(movementId)
+        .orElseThrow(() -> new MovementInfoNotFoundException("이동 정보가 존재하지 않습니다."));
+  }
+
   private void validateMasterRole(String role) {
     if (!"MASTER".equals(role)) {
-      throw new IllegalArgumentException("마스터 권한을 가진 사용자가 아닙니다.");
+      throw new MasterRoleRequiredException("마스터 권한을 가진 사용자가 아닙니다.");
     }
+  }
+
+  private Movement findActiveMovementById(UUID movementId) {
+    return movementRepository.findByMovementIdAndIsDeletedFalse(movementId)
+        .orElseThrow(() -> new MovementInfoNotFoundException("이동 정보를 찾을 수 없습니다."));
   }
 
   public static String normalizeString(String str) {
