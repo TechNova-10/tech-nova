@@ -23,8 +23,12 @@ public class DeliveryRouteRecordController {
     private final DeliveryRouteRecordService deliveryRouteRecordService;
 
     @GetMapping("/{delivery_route_id}")
-    public ResponseEntity<ApiResponseDto<DeliveryRouteRecordResponse>> getDelivery(@PathVariable("delivery_route_id") UUID deliveryRouteId) {
-        DeliveryRouteRecordResponse routeRecord = deliveryService.getDeliveryRouteRecord(deliveryRouteId);
+    public ResponseEntity<ApiResponseDto<DeliveryRouteRecordResponse>> getDelivery(
+            @PathVariable("delivery_route_id") UUID deliveryRouteId,
+            @RequestHeader(value = "X-User-Id", required = true) UUID userId,
+            @RequestHeader(value = "X-Role", required = true) String role
+    ) {
+        DeliveryRouteRecordResponse routeRecord = deliveryService.getDeliveryRouteRecord(deliveryRouteId, userId, role);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", routeRecord));
     }
 
