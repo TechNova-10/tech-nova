@@ -20,8 +20,7 @@ public class HubSearchServiceImpl implements HubSearchService {
   @Transactional(readOnly = true)
   public Page<HubResponseDto> getHubs(String role, HubSearchDto hubSearchDto, Pageable pageable) {
 
-    int pageSize =
-        (pageable.getPageSize() == 30
+    int pageSize = (pageable.getPageSize() == 30
             || pageable.getPageSize() == 50)
             ? pageable.getPageSize() : 10;
 
