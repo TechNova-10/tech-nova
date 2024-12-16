@@ -22,8 +22,11 @@ public class DeliveryController {
     private final DeliveryService deliveryService;
 
     @PostMapping
-    public ResponseEntity<ApiResponseDto<UUID>> createDelivery(@RequestBody DeliveryRequest request) {
-        UUID deliveryId = deliveryService.createDelivery(request.toDTO());
+    public ResponseEntity<ApiResponseDto<UUID>> createDelivery(
+            @RequestBody DeliveryRequest request,
+            @RequestHeader(value = "X-Order-Origin") String orderOriginToken
+    ) {
+        UUID deliveryId = deliveryService.createDelivery(request.toDTO(), orderOriginToken);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", deliveryId));
     }
 

@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
 import java.util.*;
 
 @Service
@@ -46,7 +47,13 @@ public class DeliveryService {
     private final DeliveryManagerAssignmentService deliveryManagerAssignmentService;
 
     @Transactional
-    public UUID createDelivery(DeliveryDto request) {
+    public UUID createDelivery(DeliveryDto request, String orderOriginToken) {
+        // TODO 권한 검증 추가 예정
+        // if (orderOriginToken == null) {
+        //     validateMaster(token);
+        // }
+        System.out.println("orderOriginToken" + orderOriginToken);
+
         if (deliveryRepository.existsByOrderIdAndIsDeletedFalse(request.getOrderId())) {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
         }
@@ -173,7 +180,7 @@ public class DeliveryService {
                 request.getDetailAddress()
         );
 
-        createDelivery(dto);
+        createDelivery(dto, "deliveryApp-001");
     }
 
     @Transactional
@@ -579,11 +586,15 @@ public class DeliveryService {
         return userId.equals(departureHub.getHubManagerId()) || userId.equals(arrivalHub.getHubManagerId());
     }
 
-    private boolean validateMaster(String token, Delivery delivery) {
+    private UUID validateMaster(String token) throws AccessDeniedException {
         UUID userId = authService.getUserId(token);
         String userRole = authService.getUserRole(token);
 
-        return "HUB_MANAGER".equals(userRole);
+        if (!userRole.equals("MASTER")) {
+            throw new AccessDeniedException("이 작업을 수행하려면 MASTER 권한이 필요합니다.");
+        }
+
+        return userId;
     }
 
     private void validateHubExistence(String token, UUID hubId) {
