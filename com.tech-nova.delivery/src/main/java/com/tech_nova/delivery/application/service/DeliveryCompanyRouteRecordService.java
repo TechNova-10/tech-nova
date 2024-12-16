@@ -7,7 +7,10 @@ import com.tech_nova.delivery.application.dto.LocationData;
 import com.tech_nova.delivery.application.dto.RouteEstimateData;
 import com.tech_nova.delivery.application.dto.res.DeliveryCompanyRouteRecordResponse;
 import com.tech_nova.delivery.application.dto.res.HubResponseDto;
-import com.tech_nova.delivery.domain.model.delivery.*;
+import com.tech_nova.delivery.domain.model.delivery.Delivery;
+import com.tech_nova.delivery.domain.model.delivery.DeliveryCompanyRouteRecord;
+import com.tech_nova.delivery.domain.model.delivery.DeliveryCompanyStatus;
+import com.tech_nova.delivery.domain.model.delivery.DeliveryStatus;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
 import com.tech_nova.delivery.domain.repository.DeliveryCompanyRouteRecordRepository;
@@ -240,22 +243,14 @@ public class DeliveryCompanyRouteRecordService {
 
     @Transactional
     public UUID updateCompanyRouteRecord(UUID deliveryRouteId, DeliveryCompanyRouteRecordUpdateDto request, UUID userId, String role) {
-        if (role.equals("COMPANY_MANAGER")) {
-            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        if (!role.equals("MASTER")) {
+            throw new IllegalArgumentException("해당 API에 대한 권한이 없습니다.");
         }
 
         DeliveryCompanyRouteRecord routeRecord = deliveryCompanyRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
-
-        if (role.equals("HUB_MANAGER")) {
-            validateManagedHub(delivery, userId);
-        }
-
-        if (role.equals("COMPANY_DELIVERY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
-            validateDeliveryManagerManagedDelivery(delivery.getRouteRecords(), delivery.getCompanyRouteRecords(), userId);
-        }
 
         DeliveryManager deliveryManager = null;
         if (request.getDeliveryManagerId() != null) {
@@ -275,7 +270,7 @@ public class DeliveryCompanyRouteRecordService {
 
     @Transactional
     public UUID updateCompanyRouteRecordDeliveryManager(UUID deliveryRouteId, UUID deliveryManagerId, UUID userId, String role) {
-        if (role.equals("COMPANY_MANAGER")) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
             throw new IllegalArgumentException("수정 권한이 없습니다.");
         }
 
@@ -288,8 +283,8 @@ public class DeliveryCompanyRouteRecordService {
             validateManagedHub(delivery, userId);
         }
 
-        if (role.equals("COMPANY_DELIVERY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
-            validateDeliveryManagerManagedDelivery(delivery.getRouteRecords(), delivery.getCompanyRouteRecords(), userId);
+        if (role.equals("COMPANY_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDelivery(delivery.getCompanyRouteRecords(), userId);
         }
 
         if (delivery.getCurrentStatus().equals(DeliveryStatus.DELIVERY_COMPLETED)) {
@@ -310,7 +305,7 @@ public class DeliveryCompanyRouteRecordService {
 
     @Transactional
     public UUID updateCompanyRouteRecordState(UUID deliveryRouteId, String updateStatus, UUID userId, String role) {
-        if (role.equals("COMPANY_MANAGER")) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
             throw new IllegalArgumentException("수정 권한이 없습니다.");
         }
 
@@ -323,8 +318,8 @@ public class DeliveryCompanyRouteRecordService {
             validateManagedHub(delivery, userId);
         }
 
-        if (role.equals("COMPANY_DELIVERY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
-            validateDeliveryManagerManagedDelivery(delivery.getRouteRecords(), delivery.getCompanyRouteRecords(), userId);
+        if (role.equals("COMPANY_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDelivery(delivery.getCompanyRouteRecords(), userId);
         }
 
         DeliveryCompanyStatus newStatus = DeliveryCompanyStatus.valueOf(updateStatus);
@@ -381,22 +376,13 @@ public class DeliveryCompanyRouteRecordService {
         }
     }
 
-    private void validateDeliveryManagerManagedDelivery(List<DeliveryRouteRecord> routeRecords, List<DeliveryCompanyRouteRecord> companyRouteRecords, UUID userId) {
+    private void validateDeliveryManagerManagedDelivery(List<DeliveryCompanyRouteRecord> companyRouteRecords, UUID userId) {
         boolean hasPermission = false;
 
-        for (DeliveryRouteRecord routeRecord : routeRecords) {
-            if (routeRecord.getDeliveryManager() != null && routeRecord.getDeliveryManager().getId().equals(userId)) {
+        for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
+            if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
                 hasPermission = true;
                 break;
-            }
-        }
-
-        if (!hasPermission) {
-            for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
-                if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
-                    hasPermission = true;
-                    break;
-                }
             }
         }
 
