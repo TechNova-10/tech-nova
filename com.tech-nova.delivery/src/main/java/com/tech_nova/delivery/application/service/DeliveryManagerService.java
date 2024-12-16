@@ -17,6 +17,7 @@ import com.tech_nova.delivery.presentation.request.DeliveryManagerSearchRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -106,16 +107,14 @@ public class DeliveryManagerService {
     @Cacheable(cacheNames = "deliveryManagerListCache")
     @Transactional(readOnly = true)
     public Page<DeliveryManagerResponse> getDeliveryManagers(DeliveryManagerSearchRequest request, Pageable pageable, UUID userId, String role) {
-        int pageSize =
-                (pageable.getPageSize() == 30
-                        || pageable.getPageSize() == 50)
-                        ? pageable.getPageSize() : 10;
+        if (role.equals("COMPANY_MANAGER")) {
+            throw new AuthenticationException("권한이 없는 작업입니다.");
+        }
 
-        Pageable customPageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageSize,
-                pageable.getSort()
-        );
+        int pageSize = (pageable.getPageSize() == 30 || pageable.getPageSize() == 50)
+                ? pageable.getPageSize() : 10;
+
+        Pageable customPageable = PageRequest.of(pageable.getPageNumber(), pageSize, pageable.getSort());
 
         if (role.equals("HUB_MANAGER")) {
             List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
@@ -128,7 +127,19 @@ public class DeliveryManagerService {
             request.setManageHubIds(hubIdList);
         }
 
-        return deliveryManagerRepositoryCustom.searchDeliveryManager(role, request, customPageable).map(DeliveryManagerResponse::of);
+        if (role.equals("COMPANY_DELIVERY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
+            Optional<DeliveryManager> managerOptional = deliveryManagerRepository.findByManagerUserIdAndIsDeletedFalse(userId);
+            if (managerOptional.isPresent()) {
+                DeliveryManager manager = managerOptional.get();
+                DeliveryManagerResponse response = DeliveryManagerResponse.of(manager);
+
+                return new PageImpl<>(List.of(response), customPageable, 1);
+            }
+            return new PageImpl<>(Collections.emptyList(), customPageable, 0);
+        }
+
+        return deliveryManagerRepositoryCustom.searchDeliveryManager(role, request, customPageable)
+                .map(DeliveryManagerResponse::of);
     }
 
     private void checkDeliveryOrderSequenceExists(UUID assignedHubId, Integer deliveryOrderSequence) {
