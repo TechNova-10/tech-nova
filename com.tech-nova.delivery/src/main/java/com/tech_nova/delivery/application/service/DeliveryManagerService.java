@@ -4,10 +4,12 @@ import com.tech_nova.delivery.application.dto.DeliveryManagerDto;
 import com.tech_nova.delivery.application.dto.HubData;
 import com.tech_nova.delivery.application.dto.UserData;
 import com.tech_nova.delivery.application.dto.res.DeliveryManagerResponse;
+import com.tech_nova.delivery.application.dto.res.HubResponseDto;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepository;
 import com.tech_nova.delivery.domain.repository.DeliveryManagerRepositoryCustom;
+import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
@@ -20,6 +22,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -112,12 +117,15 @@ public class DeliveryManagerService {
                 pageable.getSort()
         );
 
-        if (request.getAssignedHubId() != null && role.equals("HUB_MANAGER")) {
-            ApiResponseDto<HubData> response = hubService.getHub(request.getAssignedHubId(), "MASTER");
-            HubData hubData = response.getData();
-            if (!hubData.getHubManagerId().equals(userId)) {
-                role = "IS_HUB_MANAGER";
-            }
+        if (role.equals("HUB_MANAGER")) {
+            List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
+                    .map(hubsPage -> hubsPage.getContent())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .filter(hub -> hub.getHubManagerId().equals(userId))
+                    .map(HubResponseDto::getHubId)
+                    .toList();
+            request.setManageHubIds(hubIdList);
         }
 
         return deliveryManagerRepositoryCustom.searchDeliveryManager(role, request, customPageable).map(DeliveryManagerResponse::of);

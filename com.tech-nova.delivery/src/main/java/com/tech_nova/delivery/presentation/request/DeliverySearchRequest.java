@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -13,6 +14,7 @@ public class DeliverySearchRequest {
     private UUID orderId;
     private UUID departureHubId;
     private UUID arrivalHubId;
+    private List<UUID> manageHubIds;
     private String currentStatus;
     private String recipient;
     @JsonProperty("deleted")

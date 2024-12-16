@@ -81,7 +81,7 @@ public class DeliveryController {
             @RequestHeader(value = "X-User-Id", required = true) UUID userId,
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
-        Page<DeliveryResponse> routeRecords = deliveryService.getDeliverys(deliverySearchRequest, pageable, userId, role);
+        Page<DeliveryResponse> routeRecords = deliveryService.getDeliveries(deliverySearchRequest, pageable, userId, role);
 
         return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records retrieved successfully", routeRecords));
     }

@@ -3,6 +3,7 @@ package com.tech_nova.delivery.application.service;
 import com.tech_nova.delivery.application.dto.*;
 import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.application.dto.res.DeliveryRouteRecordResponse;
+import com.tech_nova.delivery.application.dto.res.HubResponseDto;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -17,6 +18,7 @@ import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import com.tech_nova.delivery.presentation.request.DeliverySearchRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -470,8 +472,9 @@ public class DeliveryService {
         return hubMovementDatas;
     }
 
+    @Cacheable(cacheNames = "deliveryListCache")
     @Transactional(readOnly = true)
-    public Page<DeliveryResponse> getDeliverys(DeliverySearchRequest deliveryRouteSearchRequest, Pageable pageable, UUID userId, String role) {
+    public Page<DeliveryResponse> getDeliveries(DeliverySearchRequest request, Pageable pageable, UUID userId, String role) {
 
         int pageSize =
                 (pageable.getPageSize() == 30
@@ -484,8 +487,17 @@ public class DeliveryService {
                 pageable.getSort()
         );
 
-        // TODO 권한 검증 추가
-        return deliveryRepositoryCustom.searchDelivery(role, deliveryRouteSearchRequest, customPageable).map(DeliveryResponse::of);
+        if (role.equals("HUB_MANAGER")) {
+            List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
+                    .map(hubsPage -> hubsPage.getContent())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .filter(hub -> hub.getHubManagerId().equals(userId))
+                    .map(HubResponseDto::getHubId)
+                    .toList();
+            request.setManageHubIds(hubIdList);
+        }
+        return deliveryRepositoryCustom.searchDelivery(role, request, customPageable).map(DeliveryResponse::of);
 
     }
 
@@ -628,8 +640,7 @@ public class DeliveryService {
             hubSearchDto.setProvince(province);
         }
 
-        // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
-        return Optional.ofNullable(hubService.getHubs(hubSearchDto, "", 0, 10).getData())
+        return Optional.ofNullable(hubService.getHubs(hubSearchDto, "MASTER", 0, 10).getData())
                 .filter(hubsPage -> !hubsPage.getContent().isEmpty())
                 .map(hubsPage -> hubsPage.getContent().get(0).getHubId())
                 .orElse(null);

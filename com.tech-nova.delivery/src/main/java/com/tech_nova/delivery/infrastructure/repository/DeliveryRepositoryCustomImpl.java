@@ -61,6 +61,11 @@ public class DeliveryRepositoryCustomImpl implements DeliveryRepositoryCustom {
         } else {
             builder.and(routeRecord.isDeleted.isFalse());
         }
+
+        if ("HUB_MANAGER".equals(role) && searchRequest.getManageHubIds() != null && !searchRequest.getManageHubIds().isEmpty()) {
+            builder.and(routeRecord.departureHubId.in(searchRequest.getManageHubIds()));
+            builder.and(routeRecord.arrivalHubId.in(searchRequest.getManageHubIds()));
+        }
         return builder;
     }
 

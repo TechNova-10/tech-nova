@@ -57,10 +57,12 @@ public class DeliveryManagerRepositoryCustomImpl implements DeliveryManagerRepos
         if ("MASTER".equals(role)) {
             builder.and(deletedEq(searchRequest.isDeleted()));
             builder.and(searchByAssignedHubId(searchRequest.getAssignedHubId()));
-        } else if ("HUB_MANAGER".equals(role)) {
-            builder.and(searchByAssignedHubId(searchRequest.getAssignedHubId()));
         } else {
             builder.and(manager.isDeleted.isFalse());
+        }
+
+        if ("HUB_MANAGER".equals(role) && searchRequest.getManageHubIds() != null && !searchRequest.getManageHubIds().isEmpty()) {
+            builder.and(manager.assignedHubId.in(searchRequest.getManageHubIds()));
         }
         return builder;
     }
