@@ -2,13 +2,16 @@ package com.tech_nova.auth.presentation.controller;
 
 
 import com.tech_nova.auth.application.service.AuthService;
-import com.tech_nova.auth.domain.model.User;
+import com.tech_nova.auth.presentation.dto.ApiResponseDto;
 import com.tech_nova.auth.presentation.dto.AuthResponseDto;
 import com.tech_nova.auth.presentation.request.SignInRequestDto;
 import com.tech_nova.auth.presentation.request.UserRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -24,10 +27,8 @@ public class AuthController {
     }
 
     @PostMapping("/signUp")
-    public ResponseEntity<?> signUp(@RequestBody UserRequest request,
-                                    @RequestHeader(value = "X-User-Id", required = true) String userId,
-                                    @RequestHeader(value = "X-Role", required = true) String role) {
-        User createdUser = authService.signUp(request.toDTO(), userId, role);
-        return ResponseEntity.ok(createdUser);
+    public ResponseEntity<ApiResponseDto<Void>> signUp(@RequestBody UserRequest request) {
+        authService.signUp(request.toDTO());
+        return ResponseEntity.ok(ApiResponseDto.success("User created successfully"));
     }
 }

@@ -23,6 +23,7 @@ public class User extends Timestamped {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column
     private UserRole role;
 
@@ -48,11 +49,6 @@ public class User extends Timestamped {
 
     public void updateRole(UserRole role, UUID updatedBy) {
         this.role = role;
-        markAsUpdated(updatedBy);
-    }
-
-    public void updatePassword(String password, UUID updatedBy) {
-        this.password = password;
         markAsUpdated(updatedBy);
     }
 
