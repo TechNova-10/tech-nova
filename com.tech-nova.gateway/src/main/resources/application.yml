@@ -26,6 +26,19 @@ spring:
           uri: lb://product-service
           predicates:
             - Path=/api/v1/products/**, /api/v1/orders/**
+        - id: hub-service
+          uri: lb://hub-service
+          predicates:
+            - Path=/api/v1/hubs/**
+        - id: movement-service
+          uri: lb://movement-service
+          predicates:
+            - Path=/api/v1/movements/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+
       discovery:
         locator:
           enabled: true
