@@ -107,5 +107,4 @@ public class DeliveryCompanyRouteRecordController {
 
         return ResponseEntity.ok(ApiResponseDto.success("getDelivery company routes successfully", routeRecords));
     }
-
 }
