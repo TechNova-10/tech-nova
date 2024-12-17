@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: movement-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hub
+    username: ws
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      username: default
+      password: systempass
+server:
+  port: 19099
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19090/eureka/

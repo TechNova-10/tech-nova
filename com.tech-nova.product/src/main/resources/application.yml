@@ -1,0 +1,23 @@
+server:
+  port: 19096 # product 서비스 포트 번호
+
+spring:
+  application:
+    name: product-service  # 서비스 이름
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product_db
+    username: postgres
+    password: database123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19090/eureka/
+
