@@ -32,7 +32,7 @@ public class DeliveryController {
             @RequestHeader(value = "X-User-Id", required = true) UUID userId,
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
-        UUID deliveryId = deliveryService.createDelivery(request.toDTO(), orderOriginToken);
+        UUID deliveryId = deliveryService.createDelivery(request.toDTO(), orderOriginToken, userId, role);
         return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", deliveryId));
     }
 
