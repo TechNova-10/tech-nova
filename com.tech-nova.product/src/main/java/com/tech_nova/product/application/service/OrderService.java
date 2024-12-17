@@ -33,6 +33,7 @@ public class OrderService {
     private final DeliveryServiceClient deliveryServiceClient;
 
     @Transactional public UUID createOrder(OrderRequest request, UUID userId, String role) {
+
         Order order = buildOrderFromRequest(request);
         processOrderProducts(request, order);
         orderRepository.save(order);
@@ -48,6 +49,7 @@ public class OrderService {
                 .build();
 
         try {
+            // 배송 생성 API 호출
             ApiResponseDto<UUID> deliveryResponse = deliveryServiceClient.createDelivery(
                     deliveryRequest,
                     "orderApp-001", // X-Order-Origin 헤더
@@ -55,11 +57,11 @@ public class OrderService {
                      role // 사용자 역할
              );
 
+            // 배송 ID를 반환받아 Order 객체에 연결
             UUID deliveryId = deliveryResponse.getData();
             if (deliveryId == null) {
                 throw new IllegalStateException("배송 ID가 반환되지 않았습니다.");
             }
-            order.assignDelivery(deliveryId); // 주문에 배송 ID 연결
             return order.getOrderId(); // 주문 ID 반환
         } catch (FeignException e) {
             throw new RuntimeException("배송 생성 중 오류가 발생했습니다: " + e.contentUTF8(), e);
