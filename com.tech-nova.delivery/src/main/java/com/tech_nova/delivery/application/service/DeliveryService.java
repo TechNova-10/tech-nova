@@ -44,78 +44,11 @@ public class DeliveryService {
 
     private final DeliveryManagerAssignmentService deliveryManagerAssignmentService;
 
-//    @Transactional
-//    public UUID createDelivery(DeliveryDto request, String orderOriginToken) {
-//        // TODO 권한 검증 추가 예정
-//        // if (orderOriginToken == null) {
-//        //     validateMaster(token);
-//        // }
-//        System.out.println("orderOriginToken" + orderOriginToken);
-//
-//        if (deliveryRepository.existsByOrderIdAndIsDeletedFalse(request.getOrderId())) {
-//            throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
-//        }
-//
-//        UUID recipientCompanyId = request.getRecipientCompanyId();
-//        CompanyResponse recipientCompany = companyService.getCompanyById(recipientCompanyId).getData();
-//        UUID departureHubId = recipientCompany.getHubId();
-//        UUID arrivalHubId = validateHubExistence(request.getProvince(), request.getCity());
-//
-//        Delivery delivery = Delivery.create(
-//                request.getOrderId(),
-//                departureHubId,
-//                arrivalHubId,
-//                DeliveryStatus.HUB_WAITING,
-//                request.getRecipientCompanyId(),
-//                request.getProvince(),
-//                request.getCity(),
-//                request.getDistrict(),
-//                request.getRoadName(),
-//                request.getDetailAddress(),
-//                new ArrayList<>()
-//        );
-//
-//        // 이동 경로 생성
-//        MovementRequestDto movementRequestDto = new MovementRequestDto(departureHubId, arrivalHubId);
-//        MovementResponse movementResponse = hubMovementService.createMovement(movementRequestDto, UUID.randomUUID(), "MASTER").getData();
-//        List<HubMovementData> hubMovementDatas = createHubMovementDataList(movementResponse);
-//
-//        // 담당자 배정
-//        // 생성 테스트 위해 임시로 첫번째 허브 배송 담당자 데이터 1명만 이용
-//        // 추후 담당자 배정 로직 구현 후 수정 필요
-//        DeliveryManager deliveryManager = deliveryManagerRepository.findFirstByRole(DeliveryManagerRole.HUB_DELIVERY_MANAGER).get();
-//
-//        validateRoleForHubAssignment(deliveryManager);
-//
-//        for (int i = 0; i < hubMovementDatas.size(); i++) {
-//            HubMovementData hubMovementData = hubMovementDatas.get(i);
-//            DeliveryRouteRecord routeRecord = DeliveryRouteRecord.create(
-//                    deliveryManager,
-//                    hubMovementData.getDepartureHubId(),
-//                    hubMovementData.getArrivalHubId(),
-//                    i + 1,
-//                    DeliveryHubStatus.HUB_WAITING,
-//                    hubMovementData.getDistance(),
-//                    hubMovementData.getTimeTravel()
-//            );
-//
-//            routeRecord.connectDelivery(delivery);
-//
-//            delivery.addRouteRecord(routeRecord);
-//        }
-//
-//        deliveryRepository.save(delivery);
-//
-//        return DeliveryResponse.of(delivery).getId();
-//    }
-
     @Transactional
-    public UUID createDelivery(DeliveryDto request, String orderOriginToken) {
-        // TODO 권한 검증 추가 예정
-        // if (orderOriginToken == null) {
-        //     validateMaster(token);
-        // }
-        System.out.println("orderOriginToken: " + orderOriginToken);
+    public UUID createDelivery(DeliveryDto request, String orderOriginToken, UUID userId, String role) {
+        if (orderOriginToken == null && !role.equals("MASTER")) {
+            throw new AuthenticationException("권한이 없습니다.");
+        }
 
         if (deliveryRepository.existsByOrderIdAndIsDeletedFalse(request.getOrderId())) {
             throw new DuplicateDeliveryException("해당 주문은 이미 배송이 등록되어 있습니다.");
@@ -142,18 +75,19 @@ public class DeliveryService {
 
         // 이동 경로 생성
         MovementRequestDto movementRequestDto = new MovementRequestDto(departureHubId, arrivalHubId);
-        MovementResponse movementResponse = hubMovementService.createMovement(movementRequestDto, UUID.randomUUID(), "MASTER").getData();
+        System.out.println("userId: " + userId);
+        MovementResponse movementResponse = hubMovementService.createMovement(movementRequestDto, userId, "MASTER").getData();
         List<HubMovementData> hubMovementDatas = createHubMovementDataList(movementResponse);
 
-        // 허브 담당자 배정 및 경로 레코드 생성
-        Map<UUID, DeliveryManager> assignedManagers = deliveryManagerAssignmentService.assignHubDeliveryManagers(delivery.getRouteRecords());
+        // 담당자 배정
+        // 생성 테스트 위해 임시로 첫번째 허브 배송 담당자 데이터 1명만 이용
+        // 추후 담당자 배정 로직 구현 후 수정 필요
+        DeliveryManager deliveryManager = deliveryManagerRepository.findFirstByRole(DeliveryManagerRole.HUB_DELIVERY_MANAGER).get();
+
+        validateRoleForHubAssignment(deliveryManager);
 
         for (int i = 0; i < hubMovementDatas.size(); i++) {
             HubMovementData hubMovementData = hubMovementDatas.get(i);
-            DeliveryManager deliveryManager = assignedManagers.get(hubMovementData.getDepartureHubId());
-
-            validateRoleForHubAssignment(deliveryManager);
-
             DeliveryRouteRecord routeRecord = DeliveryRouteRecord.create(
                     deliveryManager,
                     hubMovementData.getDepartureHubId(),
@@ -165,10 +99,12 @@ public class DeliveryService {
             );
 
             routeRecord.connectDelivery(delivery);
+
             delivery.addRouteRecord(routeRecord);
         }
 
         deliveryRepository.save(delivery);
+
         return DeliveryResponse.of(delivery).getId();
     }
 
@@ -265,7 +201,7 @@ public class DeliveryService {
                 request.getDetailAddress()
         );
 
-        createDelivery(dto, "deliveryApp-001");
+        createDelivery(dto, "deliveryApp-001", userId, role);
     }
 
     @Transactional
@@ -398,43 +334,37 @@ public class DeliveryService {
             throw new IllegalArgumentException("배송 객체가 필요합니다.");
         }
 
-        // 이미 업체 경로 레코드가 생성된 경우 예외 처리
         if (deliveryCompanyRouteRecordRepository.existsByDeliveryIdAndIsDeletedFalse(delivery.getId())) {
             throw new IllegalStateException("이미 해당 배송에 대한 업체 경로 레코드가 생성되었습니다. 배송 ID: " + delivery.getId());
         }
 
-        // 가장 높은 순번의 배송 경로 레코드 조회
         DeliveryRouteRecord lastSequenceRouteRecord = delivery.getRouteRecords().stream()
                 .max(Comparator.comparingInt(DeliveryRouteRecord::getSequence))
                 .orElseThrow(() -> new IllegalArgumentException("배송 경로 레코드가 없습니다."));
 
-        // 마지막 경로의 상태가 허브 도착 상태인지 확인
         if (lastSequenceRouteRecord.getCurrentStatus() != DeliveryHubStatus.HUB_ARRIVE) {
             throw new IllegalStateException("현재 최종 허브에 도착하지 않았습니다.");
         }
 
-        // 업체 담당자 배정 로직
-        DeliveryCompanyRouteRecord companyRouteRecord;
-        DeliveryManager deliveryManager = deliveryManagerAssignmentService.assignCompanyDeliveryManager();
+        // 업체 담당자 배정
+        // 생성 테스트 위해 임시로 첫 번째 업체 배송 담당자 데이터 1명만 이용
+        // 추후 담당자 배정 로직 구현 후 수정 필요
+        DeliveryManager deliveryManager = deliveryManagerRepository.findFirstByRole(DeliveryManagerRole.COMPANY_DELIVERY_MANAGER)
+                .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
 
-        // 담당자 권한 검증
         validateRoleForCompanyAssignment(deliveryManager);
 
-        // 주소 정보를 기반으로 좌표 데이터 조회
         String city = delivery.getCity();
         String roadName = delivery.getRoadName();
         LocationData coordinates = fetchCoordinates(city + " " + roadName);
 
-        // 출발 허브 정보 조회
         HubData departureHub = hubService.getHub(delivery.getArrivalHubId(), "MASTER").getData();
 
-        // 경로 데이터 조회를 위한 출발지 및 도착지 좌표 설정
         String departureEstimate = departureHub.getLongitude() + "," + departureHub.getLatitude();
         String arrivalEstimate = coordinates.getLongitude() + "," + coordinates.getLatitude();
         RouteEstimateData routeEstimateData = fetchRouteEstimate(departureEstimate, arrivalEstimate);
 
-        // 업체 경로 레코드 생성
-        companyRouteRecord = DeliveryCompanyRouteRecord.create(
+        DeliveryCompanyRouteRecord companyRouteRecord = DeliveryCompanyRouteRecord.create(
                 delivery,
                 deliveryManager,
                 delivery.getArrivalHubId(),
@@ -449,64 +379,8 @@ public class DeliveryService {
                 (double) routeEstimateData.getDistance()
         );
 
-        // 생성된 경로 레코드를 배송 객체에 추가
         delivery.addCompanyRouteRecord(companyRouteRecord);
     }
-
-
-//    @Transactional
-//    public void createCompanyRouteRecord(Delivery delivery) {
-//        if (delivery == null) {
-//            throw new IllegalArgumentException("배송 객체가 필요합니다.");
-//        }
-//
-//        if (deliveryCompanyRouteRecordRepository.existsByDeliveryIdAndIsDeletedFalse(delivery.getId())) {
-//            throw new IllegalStateException("이미 해당 배송에 대한 업체 경로 레코드가 생성되었습니다. 배송 ID: " + delivery.getId());
-//        }
-//
-//        DeliveryRouteRecord lastSequenceRouteRecord = delivery.getRouteRecords().stream()
-//                .max(Comparator.comparingInt(DeliveryRouteRecord::getSequence))
-//                .orElseThrow(() -> new IllegalArgumentException("배송 경로 레코드가 없습니다."));
-//
-//        if (lastSequenceRouteRecord.getCurrentStatus() != DeliveryHubStatus.HUB_ARRIVE) {
-//            throw new IllegalStateException("현재 최종 허브에 도착하지 않았습니다.");
-//        }
-//
-//        // 업체 담당자 배정
-//        // 생성 테스트 위해 임시로 첫 번째 업체 배송 담당자 데이터 1명만 이용
-//        // 추후 담당자 배정 로직 구현 후 수정 필요
-//        DeliveryManager deliveryManager = deliveryManagerRepository.findFirstByRole(DeliveryManagerRole.COMPANY_DELIVERY_MANAGER)
-//                .orElseThrow(() -> new IllegalArgumentException("업체 배송 담당자를 찾을 수 없습니다."));
-//
-//        validateRoleForCompanyAssignment(deliveryManager);
-//
-//        String city = delivery.getCity();
-//        String roadName = delivery.getRoadName();
-//        LocationData coordinates = fetchCoordinates(city + " " + roadName);
-//
-//        HubData departureHub = hubService.getHub(delivery.getArrivalHubId(), "MASTER").getData();
-//
-//        String departureEstimate = departureHub.getLongitude() + "," + departureHub.getLatitude();
-//        String arrivalEstimate = coordinates.getLongitude() + "," + coordinates.getLatitude();
-//        RouteEstimateData routeEstimateData = fetchRouteEstimate(departureEstimate, arrivalEstimate);
-//
-//        DeliveryCompanyRouteRecord companyRouteRecord = DeliveryCompanyRouteRecord.create(
-//                delivery,
-//                deliveryManager,
-//                delivery.getArrivalHubId(),
-//                delivery.getRecipientCompanyId(),
-//                delivery.getProvince(),
-//                delivery.getCity(),
-//                delivery.getDistrict(),
-//                delivery.getRoadName(),
-//                delivery.getDetailAddress(),
-//                DeliveryCompanyStatus.COMPANY_WAITING,
-//                (double) routeEstimateData.getDuration(),
-//                (double) routeEstimateData.getDistance()
-//        );
-//
-//        delivery.addCompanyRouteRecord(companyRouteRecord);
-//    }
 
     private List<HubMovementData> createHubMovementDataList(MovementResponse movementResponse) {
         UUID departureHubId = movementResponse.getDepartureHubId();
