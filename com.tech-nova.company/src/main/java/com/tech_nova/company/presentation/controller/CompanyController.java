@@ -84,6 +84,8 @@ public class CompanyController {
     private String extractToken(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);
+        } else if (authorizationHeader != null) {
+            return authorizationHeader; // Bearer 없는 경우 토큰만 반환
         }
         throw new IllegalArgumentException("Invalid Authorization header");
     }
