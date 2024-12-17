@@ -31,7 +31,7 @@
 - 24-12-05 ~ 24-12-17(총 13일)
 
 ## 3. 아키텍쳐
-
+![인프라](https://github.com/user-attachments/assets/a8bba90b-c831-42cc-b86b-944a7ebe858c)
 
 ## 4. 테이블 명세서
 https://teamsparta.notion.site/5b791b85f72847458f53089b0064f929
@@ -129,16 +129,73 @@ https://teamsparta.notion.site/API-57d139b62887422283c4030f11d26af2
 
 **문제점:**  각 서비스 간 통신 호출은 이루어 졌는데 실제 아이디 값 확인하는데 에러 발생<br>
 **원인** : 응답 형식 또는 데이터 타입이 다른 형태라서 검증 실패 발생.<br>
-**해결 :** 응답 형식 또는 데이터 타입을 통일하여 문제를 해결
+**해결 :** 응답 형식 또는 데이터 타입을 통일하여 문제를 해결<br>
+
+```java
+// ClientAPiResponse 활용하여 타입 통일하여 문제를 해결
+@FeignClient(name = "hub-service", path = "/api/v1/hubs")
+public interface HubServiceClient {
+
+    @GetMapping("/{hubId}")
+    ClientApiResponse<ApiResponseDto<HubResponse>> getHub(@PathVariable("hubId") UUID hubId); // 허브 ID로 조회
+
+}
+
+```
 
 ### **무한 API 호출**
 
-**문제점** : 무한 API 호출이 발생하여 서비스 장애 초래 (메모리 공간이 부족할 때까지 무한 호출)<br>
-**원인** : 예외 발생하면  globalExceptionHandler에서 공통 예외 처리가 이루어져야 하는데 해당 코드에서 반환이 이루어지지 않음<br>
-**해결** : (1.)  또는 (2.) 방식으로 해결이 가능한데 (2.)으로 해결함
+**문제점** : 무한 API 호출이 발생하여 서비스 장애 초래 (메모리 공간이 부족할 때까지 무한 호출)
 
-1. ResponseEntity 형식으로 응답 처리 + @controlleradvice 사용
-2. ApiResponse라는 공통 응답으로 처리 할 경우 + @restcontrolleradvice 사용
+```java
+// 다음과 같은 형식으로 무한 호출
+/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/
+api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1
+/api/v1/api/v1/api/v1/api/v1/api/v1/api/v1/엔드포인트
+```
+
+**원인** : 예외 발생하면  globalExceptionHandler에서 공통 예외 처리가 이루어져야 하는데 해당 코드에서 반환이 이루어지지 않음
+
+```java
+// 다음과 같이 작성하여 에러 발생
+@ControllerAdvice
+public ApiResponseDto<Void> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.error("IllegalArgumentException: {}", ex.getMessage());
+        return ApiResponseDto.<Void>builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .statusMessage(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .build();
+    }
+    
+    // 다른 코드
+```
+
+**해결** : (1.)  또는 (2.) 방식으로 해결이 가능한데 (2.)으로 해결함
+```java
+// 해결방법
+// 1.ResponseEntity 형식으로 응답 처리 + @controlleradvice 사용
+// public ResponseEntity<ApiResponeDto<void>> ~ + @ControllerAdvice
+
+// 2. ApiResponse라는 공통 응답으로 처리 할 경우 + @restcontrolleradvice 사용
+//
+@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponseDto<Void> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.error("IllegalArgumentException: {}", ex.getMessage());
+        return ApiResponseDto.<Void>builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .statusMessage(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .build();
+    }
+    
+    // 다른 코드
+```
 
 ### 조우석
 
@@ -246,8 +303,6 @@ public String findIntermediateHub(String departureHubName) {
 }
 
 ```
-
-## 회고
 
 
 
