@@ -3,6 +3,7 @@ package com.tech_nova.hub.domain.model;
 import com.tech_nova.hub.application.dtos.req.HubRequestDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -16,8 +17,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Entity
@@ -25,6 +27,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @Builder(access = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
 public class Hub {
 
   @Id
@@ -64,14 +67,14 @@ public class Hub {
   private boolean isDeleted = false;
 
   @Column(name = "created_at", updatable = false)
-  @CreationTimestamp
+  @CreatedDate
   private LocalDateTime createdAt;
 
   @Column(name = "created_by", nullable = false)
   private UUID createdBy;
 
   @Column(name = "updated_at")
-  @UpdateTimestamp
+  @LastModifiedDate
   private LocalDateTime updatedAt;
 
   @Column(name = "updated_by", nullable = false)
