@@ -1,7 +1,7 @@
 package com.tech_nova.company.infrastructure.client;
 
 
-import com.tech_nova.company.infrastructure.dto.HubApiResponse;
+import com.tech_nova.company.infrastructure.dto.ClientApiResponse;
 import com.tech_nova.company.infrastructure.dto.HubResponse;
 import com.tech_nova.company.presentation.dto.ApiResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -13,6 +13,6 @@ import java.util.UUID;
 public interface HubServiceClient {
 
     @GetMapping("/{hubId}")
-    HubApiResponse<ApiResponseDto<HubResponse>> getHub(@PathVariable("hubId") UUID hubId); // 허브 ID로 조회
+    ClientApiResponse<ApiResponseDto<HubResponse>> getHub(@PathVariable("hubId") UUID hubId); // 허브 ID로 조회
 
 }

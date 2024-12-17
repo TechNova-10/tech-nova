@@ -29,16 +29,16 @@ public class DeliveryRouteRecordRepositoryCustomImpl implements DeliveryRouteRec
 
 
     @Override
-    public Page<DeliveryRouteRecord> searchDeliveryRouteRecords(String role, DeliveryRouteSearchRequest searchRequest, Pageable pageable) {
+    public Page<DeliveryRouteRecord> searchDeliveryRouteRecords(UUID userId, String role, DeliveryRouteSearchRequest searchRequest, Pageable pageable) {
         Long totalCnt = Optional.ofNullable(jpaQueryFactory
                         .select(routeRecord.count())
                         .from(routeRecord)
-                        .where(conditions(role, searchRequest))
+                        .where(conditions(userId, role, searchRequest))
                         .fetchOne())
                 .orElseThrow();
 
         JPAQuery<DeliveryRouteRecord> query = jpaQueryFactory.selectFrom(routeRecord)
-                .where(conditions(role, searchRequest))
+                .where(conditions(userId, role, searchRequest))
                 .orderBy(getOrderSpecifiers(pageable))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
@@ -47,7 +47,7 @@ public class DeliveryRouteRecordRepositoryCustomImpl implements DeliveryRouteRec
         return new PageImpl<>(content, pageable, totalCnt);
     }
 
-    private BooleanBuilder conditions(String role, DeliveryRouteSearchRequest searchRequest) {
+    private BooleanBuilder conditions(UUID userId, String role, DeliveryRouteSearchRequest searchRequest) {
         BooleanBuilder builder = new BooleanBuilder()
                 .and(searchById(searchRequest.getId()))
                 .and(searchByDeliveryManagerId(searchRequest.getDeliveryManagerId()))
@@ -59,6 +59,11 @@ public class DeliveryRouteRecordRepositoryCustomImpl implements DeliveryRouteRec
         } else {
             builder.and(routeRecord.isDeleted.isFalse());
         }
+
+        if ("HUB_DELIVERY_MANAGER".equals(role)) {
+            builder.and(routeRecord.deliveryManager.id.eq(userId));
+        }
+
         return builder;
     }
 

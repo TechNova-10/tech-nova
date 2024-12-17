@@ -74,8 +74,8 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public String signIn(String usernmae, String password) {
-        User user = userRepository.findByUsernameAndIsDeletedFalse(usernmae)
+    public String signIn(String username, String password) {
+        User user = userRepository.findByUsernameAndIsDeletedFalse(username)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user ID or password"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
