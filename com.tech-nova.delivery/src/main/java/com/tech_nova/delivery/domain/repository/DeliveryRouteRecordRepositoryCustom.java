@@ -6,8 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
 public interface DeliveryRouteRecordRepositoryCustom {
-    Page<DeliveryRouteRecord> searchDeliveryRouteRecords(String role, DeliveryRouteSearchRequest searchRequest, Pageable pageable);
+    Page<DeliveryRouteRecord> searchDeliveryRouteRecords(UUID userId, String role, DeliveryRouteSearchRequest searchRequest, Pageable pageable);
 
 }

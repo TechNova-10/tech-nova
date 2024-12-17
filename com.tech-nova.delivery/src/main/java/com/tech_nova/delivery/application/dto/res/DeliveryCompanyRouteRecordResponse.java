@@ -16,6 +16,11 @@ public class DeliveryCompanyRouteRecordResponse {
     private DeliveryManagerResponse deliveryManager;
     private UUID departureHubId;
     private UUID recipientCompanyId;
+    private String province;
+    private String city;
+    private String district;
+    private String roadName;
+    private String detailAddress;
     private DeliveryCompanyStatus currentStatus;
     private Integer deliveryOrderSequence;
     private Double expectedDistance;
@@ -30,6 +35,11 @@ public class DeliveryCompanyRouteRecordResponse {
                 .deliveryManager(DeliveryManagerResponse.of(routeRecord.getDeliveryManager()))
                 .departureHubId(routeRecord.getDepartureHubId())
                 .recipientCompanyId(routeRecord.getRecipientCompanyId())
+                .province(routeRecord.getProvince())
+                .district(routeRecord.getDistrict())
+                .city(routeRecord.getCity())
+                .roadName(routeRecord.getRoadName())
+                .detailAddress(routeRecord.getDetailAddress())
                 .currentStatus(routeRecord.getCurrentStatus())
                 .expectedDistance(routeRecord.getExpectedDistance())
                 .realDistance(routeRecord.getRealDistance())

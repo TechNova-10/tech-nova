@@ -25,20 +25,20 @@ import java.util.UUID;
 public class DeliveryRepositoryCustomImpl implements DeliveryRepositoryCustom {
 
     private final JPAQueryFactory jpaQueryFactory;
-    QDelivery routeRecord = QDelivery.delivery;
+    QDelivery delivery = QDelivery.delivery;
 
 
     @Override
-    public Page<Delivery> searchDelivery(String role, DeliverySearchRequest searchRequest, Pageable pageable) {
+    public Page<Delivery> searchDelivery(UUID userId, String role, DeliverySearchRequest searchRequest, Pageable pageable) {
         Long totalCnt = Optional.ofNullable(jpaQueryFactory
-                        .select(routeRecord.count())
-                        .from(routeRecord)
-                        .where(conditions(role, searchRequest))
+                        .select(delivery.count())
+                        .from(delivery)
+                        .where(conditions(userId, role, searchRequest))
                         .fetchOne())
                 .orElseThrow();
 
-        JPAQuery<Delivery> query = jpaQueryFactory.selectFrom(routeRecord)
-                .where(conditions(role, searchRequest))
+        JPAQuery<Delivery> query = jpaQueryFactory.selectFrom(delivery)
+                .where(conditions(userId, role, searchRequest))
                 .orderBy(getOrderSpecifiers(pageable))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
@@ -47,7 +47,7 @@ public class DeliveryRepositoryCustomImpl implements DeliveryRepositoryCustom {
         return new PageImpl<>(content, pageable, totalCnt);
     }
 
-    private BooleanBuilder conditions(String role, DeliverySearchRequest searchRequest) {
+    private BooleanBuilder conditions(UUID userId, String role, DeliverySearchRequest searchRequest) {
         BooleanBuilder builder = new BooleanBuilder()
                 .and(searchById(searchRequest.getId()))
                 .and(searchByOrderId(searchRequest.getOrderId()))
@@ -59,47 +59,61 @@ public class DeliveryRepositoryCustomImpl implements DeliveryRepositoryCustom {
         if ("MASTER".equals(role)) {
             builder.and(deletedEq(searchRequest.isDeleted()));
         } else {
-            builder.and(routeRecord.isDeleted.isFalse());
+            builder.and(delivery.isDeleted.isFalse());
         }
+
+        if ("HUB_MANAGER".equals(role) && searchRequest.getManageHubIds() != null && !searchRequest.getManageHubIds().isEmpty()) {
+            builder.and(delivery.departureHubId.in(searchRequest.getManageHubIds()));
+            builder.and(delivery.arrivalHubId.in(searchRequest.getManageHubIds()));
+        }
+
+        if ("HUB_DELIVERY_MANAGER".equals(role)) {
+            builder.and(delivery.routeRecords.any().deliveryManager.id.eq(userId));
+        }
+
+        if ("COMPANY_DELIVERY_MANAGER".equals(role)) {
+            builder.and(delivery.companyRouteRecords.any().deliveryManager.id.eq(userId));
+        }
+
         return builder;
     }
 
     private BooleanExpression deletedEq(Boolean isDeleted) {
-        return isDeleted != null ? routeRecord.isDeleted.eq(isDeleted) : null;
+        return isDeleted != null ? delivery.isDeleted.eq(isDeleted) : null;
     }
 
     private BooleanExpression searchById(UUID id) {
-        return id != null ? routeRecord.id.eq(id) : null;
+        return id != null ? delivery.id.eq(id) : null;
     }
 
     private BooleanExpression searchByOrderId(UUID orderId) {
-        return orderId != null ? routeRecord.orderId.eq(orderId) : null;
+        return orderId != null ? delivery.orderId.eq(orderId) : null;
     }
 
     private BooleanExpression searchByDepartureHubId(UUID departureHubId) {
-        return departureHubId != null ? routeRecord.departureHubId.eq(departureHubId) : null;
+        return departureHubId != null ? delivery.departureHubId.eq(departureHubId) : null;
     }
 
     private BooleanExpression searchByArrivalHubId(UUID arrivalHubId) {
-        return arrivalHubId != null ? routeRecord.departureHubId.eq(arrivalHubId) : null;
+        return arrivalHubId != null ? delivery.departureHubId.eq(arrivalHubId) : null;
     }
 
     private BooleanExpression searchCurrentStatus(String currentStatus) {
-        return currentStatus != null ? routeRecord.currentStatus.eq(DeliveryStatus.valueOf(currentStatus)) : null;
+        return currentStatus != null ? delivery.currentStatus.eq(DeliveryStatus.valueOf(currentStatus)) : null;
     }
 
     private BooleanExpression searchByRecipient(String recipient) {
-        return recipient != null ? routeRecord.recipient.eq(recipient) : null;
+        return recipient != null ? delivery.recipient.eq(recipient) : null;
     }
 
     private OrderSpecifier<?>[] getOrderSpecifiers(Pageable pageable) {
 
         OrderSpecifier<?> orderSpecifier = switch (pageable.getSort().toString()) {
-            case "createBy: ASC" -> routeRecord.createBy.asc();
-            case "createBy: DESC" -> routeRecord.createBy.desc();
-            case "updateBy: ASC" -> routeRecord.updateBy.asc();
-            case "updateBy: DESC" -> routeRecord.updateBy.desc();
-            default -> routeRecord.createdAt.asc();
+            case "createBy: ASC" -> delivery.createBy.asc();
+            case "createBy: DESC" -> delivery.createBy.desc();
+            case "updateBy: ASC" -> delivery.updateBy.asc();
+            case "updateBy: DESC" -> delivery.updateBy.desc();
+            default -> delivery.createdAt.asc();
         };
         return new OrderSpecifier<?>[]{orderSpecifier};
     }

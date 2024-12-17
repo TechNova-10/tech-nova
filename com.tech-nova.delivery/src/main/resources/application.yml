@@ -35,11 +35,23 @@ naver:
 
 google:
   api:
-    key: AIzaSyBM53zRSF5wxFe0DP86mqGkEO9382PUU0w
-#management:
-#  zipkin:
-#    tracing:
-#      endpoint: "http://localhost:9411/api/v2/spans"
-#  tracing:
-#    sampling:
-#      probability: 1.0
+    key: ${GOOGLE_API_KEY}
+
+management:
+  zipkin:
+    tracing:
+      endpoint: "http://localhost:9411/api/v2/spans"
+  tracing:
+    sampling:
+      probability: 1.0
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.boot.autoconfigure.web: DEBUG
