@@ -36,7 +36,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", deliveryId));
     }
 
-    @Operation(summary = "베송 단건 조회")
+    @Operation(summary = "배송 단건 조회")
     @GetMapping("/{delivery_id}")
     public ResponseEntity<ApiResponseDto<DeliveryResponse>> getDelivery(
             @PathVariable("delivery_id") UUID deliveryId,
