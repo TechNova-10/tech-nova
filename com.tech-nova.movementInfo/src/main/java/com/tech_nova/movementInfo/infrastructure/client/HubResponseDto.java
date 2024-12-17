@@ -1,5 +1,6 @@
 package com.tech_nova.movementInfo.infrastructure.client;
 
+import java.io.Serializable;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
