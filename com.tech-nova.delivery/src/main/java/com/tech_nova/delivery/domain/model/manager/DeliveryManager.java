@@ -28,7 +28,7 @@ public class DeliveryManager extends Timestamped {
     @Column(nullable = false)
     private DeliveryManagerRole managerRole;
 
-    @Column(nullable = false)
+    @Column
     private Integer deliveryOrderSequence;
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
@@ -37,14 +37,12 @@ public class DeliveryManager extends Timestamped {
     public static DeliveryManager create(
             UUID assignedHubId,
             UUID managerUserId,
-            String managerRole,
-            int deliveryOrderSequence
+            String managerRole
     ) {
         return DeliveryManager.builder()
                 .assignedHubId(assignedHubId)
                 .managerUserId(managerUserId)
                 .managerRole(DeliveryManagerRole.fromString(managerRole))
-                .deliveryOrderSequence(deliveryOrderSequence)
                 .build();
     }
 
