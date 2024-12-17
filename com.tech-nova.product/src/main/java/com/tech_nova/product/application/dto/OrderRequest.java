@@ -19,4 +19,10 @@ public class OrderRequest {
     private String requestDetails;
     private LocalDate deliveryDeadLine;
     private List<OrderProductRequest> orderProducts;
+
+    private String province;
+    private String city;
+    private String district;
+    private String roadName;
+    private String detailAddress;
 }
