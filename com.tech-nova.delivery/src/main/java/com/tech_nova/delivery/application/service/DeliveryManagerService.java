@@ -11,7 +11,6 @@ import com.tech_nova.delivery.domain.repository.DeliveryManagerRepositoryCustom;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
 import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
 import com.tech_nova.delivery.presentation.exception.AuthenticationException;
-import com.tech_nova.delivery.presentation.exception.DeliveryOrderSequenceAlreadyExistsException;
 import com.tech_nova.delivery.presentation.request.DeliveryManagerRequest;
 import com.tech_nova.delivery.presentation.request.DeliveryManagerSearchRequest;
 import lombok.RequiredArgsConstructor;
@@ -64,21 +63,10 @@ public class DeliveryManagerService {
 
         validateDeliveryManagerLimits(request);
 
-        Integer deliveryOrderSequence = request.getDeliveryOrderSequence();
-
-        if (deliveryOrderSequence == null) {
-            deliveryOrderSequence = deliveryManagerRepository.findMaxDeliveryOrderByHubId(request.getAssignedHubId()) + 1;
-        } else if (deliveryOrderSequence <= 0) {
-            throw new IllegalArgumentException("배송 순서 번호는 0보다 커야 합니다.");
-        } else {
-            checkDeliveryOrderSequenceExists(request.getAssignedHubId(), deliveryOrderSequence);
-        }
-
         DeliveryManager deliveryManager = DeliveryManager.create(
                 request.getAssignedHubId(),
                 request.getManagerUserId(),
-                request.getManagerRole(),
-                deliveryOrderSequence
+                request.getManagerRole()
         );
 
         deliveryManagerRepository.save(deliveryManager);
@@ -166,11 +154,6 @@ public class DeliveryManagerService {
         );
     }
 
-    private void checkDeliveryOrderSequenceExists(UUID assignedHubId, Integer deliveryOrderSequence) {
-        if (deliveryManagerRepository.existsByAssignedHubIdAndDeliveryOrderSequence(assignedHubId, deliveryOrderSequence)) {
-            throw new DeliveryOrderSequenceAlreadyExistsException("해당 순번은 이미 존재합니다.");
-        }
-    }
 
     private void validateRoleAndHubAssignment(DeliveryManagerDto request) {
         DeliveryManagerRole role = DeliveryManagerRole.fromString(request.getManagerRole());
