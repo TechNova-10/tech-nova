@@ -9,14 +9,12 @@ import java.util.UUID;
 
 @Getter
 @Setter
-public class DeliverySearchRequest {
+public class DeliveryManagerSearchRequest {
     private UUID id;
-    private UUID orderId;
-    private UUID departureHubId;
-    private UUID arrivalHubId;
+    private UUID assignedHubId;
+    private UUID managerUserId;
     private List<UUID> manageHubIds;
-    private String currentStatus;
-    private String recipient;
+    private String managerRole;
     @JsonProperty("deleted")
     private boolean isDeleted;
 }
