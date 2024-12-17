@@ -56,7 +56,7 @@ public class DeliveryController {
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
         deliveryService.updateRecipient(deliveryId, recipient, userId, role);
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", deliveryId));
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery recipient updated successfully", deliveryId));
     }
 
     @Operation(summary = "배송 주소 변경")
