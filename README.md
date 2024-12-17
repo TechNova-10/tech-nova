@@ -35,7 +35,9 @@
 
 ## 4. 테이블 명세서
 https://teamsparta.notion.site/5b791b85f72847458f53089b0064f929
+
 ## 5. ERD
+<img width="852" alt="erd" src="https://github.com/user-attachments/assets/8e901a19-e19c-4c8d-b0ac-f9ba83ae5a15" />
 
 ## 6. API 명세서
 https://teamsparta.notion.site/API-57d139b62887422283c4030f11d26af2
