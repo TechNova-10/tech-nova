@@ -3,6 +3,7 @@ package com.tech_nova.delivery.application.service;
 import com.tech_nova.delivery.application.dto.*;
 import com.tech_nova.delivery.application.dto.res.DeliveryResponse;
 import com.tech_nova.delivery.application.dto.res.DeliveryRouteRecordResponse;
+import com.tech_nova.delivery.application.dto.res.HubResponseDto;
 import com.tech_nova.delivery.domain.model.delivery.*;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManager;
 import com.tech_nova.delivery.domain.model.manager.DeliveryManagerRole;
@@ -12,11 +13,12 @@ import com.tech_nova.delivery.infrastructure.dto.CompanyResponse;
 import com.tech_nova.delivery.infrastructure.dto.HubSearchDto;
 import com.tech_nova.delivery.infrastructure.dto.MovementRequestDto;
 import com.tech_nova.delivery.infrastructure.dto.MovementResponse;
-import com.tech_nova.delivery.presentation.dto.ApiResponseDto;
+import com.tech_nova.delivery.presentation.exception.AuthenticationException;
 import com.tech_nova.delivery.presentation.exception.DuplicateDeliveryException;
 import com.tech_nova.delivery.presentation.exception.HubDeliveryCompletedException;
 import com.tech_nova.delivery.presentation.request.DeliverySearchRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,8 +30,6 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {
-
-    private final AuthService authService;
     private final CompanyService companyService;
     private final HubService hubService;
     private final HubMovementService hubMovementService;
@@ -172,9 +172,9 @@ public class DeliveryService {
         return DeliveryResponse.of(delivery).getId();
     }
 
-
+    @Cacheable(cacheNames = "deliveryCache", key = "#deliveryId")
     @Transactional(readOnly = true)
-    public DeliveryResponse getDelivery(UUID deliveryId, String role) {
+    public DeliveryResponse getDelivery(UUID deliveryId, UUID userId, String role) {
         if (role.equals("HUB_MANAGER") || role.equals("MASTER")) {
             Delivery delivery = deliveryRepository.findById(deliveryId)
                     .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
@@ -184,11 +184,25 @@ public class DeliveryService {
         Delivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
 
+        if (role.equals("COMPANY_DELIVERY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
+            List<DeliveryRouteRecord> routeRecords = delivery.getRouteRecords();
+            List<DeliveryCompanyRouteRecord> companyRouteRecords = delivery.getCompanyRouteRecords();
+
+            validateDeliveryManagerManagedDelivery(routeRecords, companyRouteRecords, userId);
+        }
+
         return DeliveryResponse.of(delivery);
     }
 
-    public DeliveryRouteRecordResponse getDeliveryRouteRecord(UUID deliveryId) {
-        // TODO: 마스터와 허브 관리자이면 삭제된 배송도 볼 수 있게 수정
+    public DeliveryRouteRecordResponse getDeliveryRouteRecord(UUID deliveryId, UUID userId, String role) {
+        if (role.equals("HUB_MANAGER") || role.equals("MASTER")) {
+            DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryId)
+                    .orElseThrow(() -> new IllegalArgumentException("배송 경로를 찾을 수 없습니다."));
+
+            return DeliveryRouteRecordResponse.of(routeRecord);
+
+        }
+
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 경로를 찾을 수 없습니다."));
 
@@ -197,8 +211,20 @@ public class DeliveryService {
 
     @Transactional
     public void updateDeliveryAddress(UUID deliveryId, DeliveryAddressUpdateDto request, UUID userId, String role) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        }
+
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
+        if (role.equals("COMPANY_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDeliveryCompanyRouteRecord(delivery.getCompanyRouteRecords(), userId);
+        }
 
         if (delivery.isDeleted()) {
             throw new IllegalStateException("삭제된 배송은 수정할 수 없습니다.");
@@ -244,8 +270,20 @@ public class DeliveryService {
 
     @Transactional
     public void updateRecipient(UUID deliveryId, String recipient, UUID userId, String role) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("HUB_DELIVERY_MANAGER")) {
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        }
+
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
+        if (role.equals("COMPANY_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDeliveryCompanyRouteRecord(delivery.getCompanyRouteRecords(), userId);
+        }
 
         if (delivery.isDeleted()) {
             throw new IllegalArgumentException("삭제된 배송에는 수령인을 입력할 수 없습니다.");
@@ -262,13 +300,26 @@ public class DeliveryService {
 
     @Transactional
     public void deleteDelivery(UUID deliveryId, UUID userId, String role) {
-        Delivery delivery = deliveryRepository.findById(deliveryId)
+        if (!role.equals("MASTER") && !role.equals("HUB_MANAGER")) {
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
+        }
+
+        Delivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("배송 데이터를 찾을 수 없습니다."));
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
         delivery.markAsDeleted(userId);
     }
 
     @Transactional
     public UUID updateRouteRecord(UUID deliveryRouteId, DeliveryRouteRecordUpdateDto request, UUID userId, String role) {
+        if (!role.equals("MASTER")) {
+            throw new IllegalArgumentException("해당 API에 대한 권한이 없습니다.");
+        }
+
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
@@ -299,10 +350,22 @@ public class DeliveryService {
 
     @Transactional
     public UUID updateRouteRecordState(UUID deliveryRouteId, String updateStatus, UUID userId, String role) {
+        if (role.equals("COMPANY_MANAGER") || role.equals("COMPANY_DELIVERY_MANAGER")) {
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
+        }
+
         DeliveryRouteRecord routeRecord = deliveryRouteRecordRepository.findById(deliveryRouteId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 배송 경로를 찾을 수 없습니다."));
 
         Delivery delivery = routeRecord.getDelivery();
+
+        if (role.equals("HUB_MANAGER")) {
+            validateManagedHub(delivery, userId);
+        }
+
+        if (role.equals("HUB_DELIVERY_MANAGER")) {
+            validateDeliveryManagerManagedDeliveryRouterRecord(delivery.getRouteRecords(), userId);
+        }
 
         DeliveryHubStatus newStatus = DeliveryHubStatus.valueOf(updateStatus);
 
@@ -320,6 +383,10 @@ public class DeliveryService {
 
     @Transactional
     public void createCompanyRouteRecordByDeliveryId(UUID deliveryId, UUID userId, String role) {
+        if (!role.equals("MASTER")) {
+            throw new AuthenticationException("권한이 없습니다.");
+        }
+
         Delivery delivery = deliveryRepository.findById(deliveryId).orElseThrow();
 
         createCompanyRouteRecord(delivery);
@@ -451,7 +518,6 @@ public class DeliveryService {
         if (intermediateHubId.equals(arrivalHubId)) {
             hubMovementDatas.add(new HubMovementData(UUID.randomUUID(), departureHubId, arrivalHubId, movementResponse.getTimeTravel(), movementResponse.getDistance()));
         } else {
-            // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
             HubData departureHub = hubService.getHub(departureHubId, "MASTER").getData();
             HubData intermediateHub = hubService.getHub(intermediateHubId, "MASTER").getData();
             HubData arrivalHub = hubService.getHub(arrivalHubId, "MASTER").getData();
@@ -470,8 +536,9 @@ public class DeliveryService {
         return hubMovementDatas;
     }
 
+    @Cacheable(cacheNames = "deliveryListCache")
     @Transactional(readOnly = true)
-    public Page<DeliveryResponse> getDeliverys(DeliverySearchRequest deliveryRouteSearchRequest, Pageable pageable, UUID userId, String role) {
+    public Page<DeliveryResponse> getDeliveries(DeliverySearchRequest request, Pageable pageable, UUID userId, String role) {
 
         int pageSize =
                 (pageable.getPageSize() == 30
@@ -484,9 +551,18 @@ public class DeliveryService {
                 pageable.getSort()
         );
 
-        // TODO 권한 검증 추가
-        return deliveryRepositoryCustom.searchDelivery(role, deliveryRouteSearchRequest, customPageable).map(DeliveryResponse::of);
+        if (role.equals("HUB_MANAGER")) {
+            List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
+                    .map(hubsPage -> hubsPage.getContent())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .filter(hub -> hub.getHubManagerId().equals(userId))
+                    .map(HubResponseDto::getHubId)
+                    .toList();
+            request.setManageHubIds(hubIdList);
+        }
 
+        return deliveryRepositoryCustom.searchDelivery(userId, role, request, customPageable).map(DeliveryResponse::of);
     }
 
     private void validateRoleForHubAssignment(DeliveryManager deliveryManager) {
@@ -547,60 +623,82 @@ public class DeliveryService {
         }
     }
 
+    private void validateManagedHub(Delivery delivery, UUID userId) {
+        List<UUID> hubIdList = Optional.ofNullable(hubService.getHubs(new HubSearchDto(), "MASTER", 0, 10).getData())
+                .map(hubsPage -> hubsPage.getContent())
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(hub -> hub.getHubManagerId().equals(userId))
+                .map(HubResponseDto::getHubId)
+                .toList();
+
+        if (!hubIdList.contains(delivery.getDepartureHubId()) && !hubIdList.contains(delivery.getArrivalHubId())) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+    private void validateDeliveryManagerManagedDelivery(List<DeliveryRouteRecord> routeRecords, List<DeliveryCompanyRouteRecord> companyRouteRecords, UUID userId) {
+        boolean hasPermission = false;
+
+        for (DeliveryRouteRecord routeRecord : routeRecords) {
+            if (routeRecord.getDeliveryManager() != null && routeRecord.getDeliveryManager().getId().equals(userId)) {
+                hasPermission = true;
+                break;
+            }
+        }
+
+        if (!hasPermission) {
+            for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
+                if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
+                    hasPermission = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasPermission) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+    private void validateDeliveryManagerManagedDeliveryRouterRecord(List<DeliveryRouteRecord> routeRecords, UUID userId) {
+        boolean hasPermission = false;
+
+        for (DeliveryRouteRecord routeRecord : routeRecords) {
+            if (routeRecord.getDeliveryManager() != null && routeRecord.getDeliveryManager().getId().equals(userId)) {
+                hasPermission = true;
+                break;
+            }
+        }
+
+
+        if (!hasPermission) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+    private void validateDeliveryManagerManagedDeliveryCompanyRouteRecord(List<DeliveryCompanyRouteRecord> companyRouteRecords, UUID userId) {
+        boolean hasPermission = false;
+
+        for (DeliveryCompanyRouteRecord companyRouteRecord : companyRouteRecords) {
+            if (companyRouteRecord.getDeliveryManager() != null && companyRouteRecord.getDeliveryManager().getId().equals(userId)) {
+                hasPermission = true;
+                break;
+            }
+        }
+
+        if (!hasPermission) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+    }
+
+
     public LocationData fetchCoordinates(String address) {
         return geocodingApiService.getCoordinates(address);
     }
 
     public RouteEstimateData fetchRouteEstimate(String start, String goal) {
         return directionsApiService.getRouteEstimateData(start, goal);
-    }
-
-    private UUID getUserIdFromToken(String token) {
-        return UUID.randomUUID();
-    }
-
-    private boolean validateDeliveryManagerAssignedHub(Delivery delivery, UUID userId, String role) {
-
-        if (!"DELIVERY_MANAGER".equals(role)) {
-            return true;
-        }
-
-        DeliveryManager manager = deliveryManagerRepository.findByIdAndIsDeletedFalse(userId)
-                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
-
-        UUID managerAssignedHubId = manager.getAssignedHubId();
-        UUID departureHubId = delivery.getDepartureHubId();
-        UUID arrivalHubId = delivery.getArrivalHubId();
-
-        return managerAssignedHubId.equals(departureHubId) || managerAssignedHubId.equals(arrivalHubId);
-    }
-
-    private boolean validateHubManagerAssignedHub(Delivery delivery, UUID userId, String role) {
-        if (!"HUB_MANAGER".equals(role)) {
-            return true;
-        }
-
-        UUID departureHubId = delivery.getDepartureHubId();
-        UUID arrivalHubId = delivery.getArrivalHubId();
-
-        HubData departureHub = hubService.getHub(departureHubId, "").getData();
-        HubData arrivalHub = hubService.getHub(arrivalHubId, "").getData();
-
-        return userId.equals(departureHub.getHubManagerId()) || userId.equals(arrivalHub.getHubManagerId());
-    }
-
-    private void validateHubExistence(UUID hubId) {
-        try {
-            ApiResponseDto<HubData> response = hubService.getHub(hubId, "");
-            HubData hubData = response.getData();
-
-            if (hubData == null) {
-                throw new IllegalArgumentException("허브 정보를 찾을 수 없습니다.");
-            }
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("허브 검증에 실패했습니다.", e);
-        }
     }
 
     private UUID validateHubExistence(String province, String city) {
@@ -628,8 +726,7 @@ public class DeliveryService {
             hubSearchDto.setProvince(province);
         }
 
-        // TODO 추후 role 변경 필요 현재 임의로 MASTER 적용
-        return Optional.ofNullable(hubService.getHubs(hubSearchDto, "", 0, 10).getData())
+        return Optional.ofNullable(hubService.getHubs(hubSearchDto, "MASTER", 0, 10).getData())
                 .filter(hubsPage -> !hubsPage.getContent().isEmpty())
                 .map(hubsPage -> hubsPage.getContent().get(0).getHubId())
                 .orElse(null);
