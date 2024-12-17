@@ -204,14 +204,7 @@ public class HubController {
       }
   )
   @GetMapping("/clients")
-  public ResponseEntity<ApiResponseDto<List<HubClientResponseDto>>> getHubList() {
-    return new ResponseEntity<>(
-        ApiResponseDto.<List<HubClientResponseDto>>builder()
-            .code(200)
-            .message("허브 리스트 조회 완료")
-            .data(hubService.getHubList())
-            .build(),
-        HttpStatus.OK
-    );
+  public List<HubClientResponseDto> getHubList() {
+    return hubService.getHubList();
   }
 }
