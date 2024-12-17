@@ -19,9 +19,13 @@ public class OrderController {
 
     private final OrderService orderService;
     @PostMapping
-    public ResponseEntity<ApiResponseDto<Void>> createOrder(@RequestBody OrderRequest request) {
-        orderService.createOrder(request);
-        return ResponseEntity.status(201).body(ApiResponseDto.success("주문 생성 완료", null));
+    public ResponseEntity<ApiResponseDto<UUID>> createOrder(
+            @RequestBody OrderRequest request,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Role") String role
+    ) {
+        UUID orderId = orderService.createOrder(request, userId, role);
+        return ResponseEntity.status(201).body(ApiResponseDto.success("주문 생성 완료", orderId));
     }
 
     @PutMapping("/{orderId}")
