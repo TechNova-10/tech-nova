@@ -35,13 +35,8 @@ public class Order extends AuditField {
     @Column
     private LocalDateTime deliveryDate;
 
-    @Column
-    private UUID deliveryId; // 배송 ID 추가
-
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderProduct> orderProducts = new ArrayList<>();
 
-    public void assignDelivery(UUID deliveryId) {
-        this.deliveryId = deliveryId;
-    }
+
 }
