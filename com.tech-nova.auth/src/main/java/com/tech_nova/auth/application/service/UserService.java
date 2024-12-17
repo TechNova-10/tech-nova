@@ -83,6 +83,16 @@ public class UserService {
 
     @Transactional
     public void updateUserRole(UUID searchUserId, String updateRole, UUID userId, String role) {
+        if (!role.equals("MASTER") && !role.equals("HUB_MANAGER")) {
+            throw new AuthenticationException("사용자 역할을 변경하는 권한이 없습니다.");
+        }
+
+        if (role.equals("HUB_MANAGER")) {
+            if (!updateRole.equals("COMPANY_DELIVERY_MANAGER")) {
+                throw new AuthenticationException("사용자 역할을 변경하는 권한이 없습니다.");
+            }
+        }
+
         User user = userRepository.findById(searchUserId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
         user.updateRole(UserRole.valueOf(updateRole), userId);
