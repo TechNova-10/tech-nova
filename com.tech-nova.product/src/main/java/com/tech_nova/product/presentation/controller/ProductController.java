@@ -21,28 +21,28 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<ApiResponseDto<Void>> createProduct(
-//            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody ProductRequest request) {
-//        String token = extractToken(authorizationHeader);
-        productService.createProduct(request);
+        String token = extractToken(authorizationHeader);
+        productService.createProduct(request, token);
         return ResponseEntity.status(201).body(ApiResponseDto.success("상품 생성 완료", null));
     }
 
     @PutMapping("/{productId}")
     public ResponseEntity<ApiResponseDto<ProductResponse>> updateProduct(
-//            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable UUID productId, @RequestBody ProductRequest request) {
-//        String token = extractToken(authorizationHeader);
-        ProductResponse response = productService.updateProduct(productId, request);
+        String token = extractToken(authorizationHeader);
+        ProductResponse response = productService.updateProduct(productId, request, token);
         return ResponseEntity.ok(ApiResponseDto.success("상품 수정 완료", response));
     }
 
     @DeleteMapping("/{productId}")
     public ResponseEntity<ApiResponseDto<Void>> deleteProduct(
-//            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable UUID productId) {
-//        String token = extractToken(authorizationHeader);
-        productService.deleteProduct(productId);
+        String token = extractToken(authorizationHeader);
+        productService.deleteProduct(productId, token);
         return ResponseEntity.ok(ApiResponseDto.successDelete());
     }
 

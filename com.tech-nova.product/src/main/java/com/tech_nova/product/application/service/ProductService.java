@@ -8,6 +8,7 @@ import com.tech_nova.product.infrastructure.client.AuthServiceClient;
 import com.tech_nova.product.infrastructure.client.CompanyServiceClient;
 import com.tech_nova.product.infrastructure.dto.CompanyApiResponse;
 import com.tech_nova.product.infrastructure.dto.CompanyResponse;
+import com.tech_nova.product.infrastructure.dto.UserData;
 import com.tech_nova.product.presentation.controller.ProductController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,9 +30,9 @@ public class ProductService {
     private final AuthServiceClient authServiceClient;
 
     @Transactional
-    public void createProduct(ProductRequest request) {
+    public void createProduct(ProductRequest request, String token) {
         validateIds(request.getHubId(), request.getCompanyId());
-        // validateUserRole(token, request.getHubId(), request.getCompanyId());
+         validateUserRole(token, request.getHubId(), request.getCompanyId());
 
         Product product = Product.builder()
                 .name(request.getName())
@@ -46,12 +47,12 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductResponse updateProduct(UUID productId, ProductRequest request) {
+    public ProductResponse updateProduct(UUID productId, ProductRequest request, String token) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품 존재 X"));
 
         validateIds(request.getHubId(), request.getCompanyId());
-        // validateUserRole(token, request.getHubId(), request.getCompanyId());
+         validateUserRole(token, request.getHubId(), request.getCompanyId());
 
         product.update(request.getName(), request.getDescription(), request.getPrice(), request.getStock());
         productRepository.save(product);
@@ -60,11 +61,11 @@ public class ProductService {
     }
 
     @Transactional
-    public void deleteProduct( UUID productId) {
+    public void deleteProduct(UUID productId , String token) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품 존재 X"));
 
-        // validateUserRole(token, product.getHubId(), product.getCompanyId());
+         validateUserRole(token, product.getHubId(), product.getCompanyId());
 
         product.softDelete();
         productRepository.save(product);
@@ -100,24 +101,28 @@ public class ProductService {
             if (companyResponse == null || hubResponses.isEmpty()) {
                 throw new IllegalArgumentException("유효하지 않은 업체 Id 또는 허브 Id!");
             }
-        }
     }
 
-//    private void validateUserRole(String token, UUID hubId, UUID companyId) {
-        // String userRole = authServiceClient.getUserRole(token);
 
-        // if ("MASTER".equals(userRole)) {
-        //     return;
-        // }
+    private void validateUserRole(String token, UUID hubId, UUID companyId) {
+        String userRole = authServiceClient.getUserRoleByToken(token).getData();
 
-        // String userHubId = authServiceClient.getUserHubId(token);
+        if ("MASTER".equals(userRole)) {
+            return;
+        }
 
-        // if ("HUB".equals(userRole) && !hubId.toString().equals(userHubId)) {
-        //     throw new IllegalArgumentException("해당 허브의 제품을 관리할 권한이 없습니다.");
-        // }
-
-        // if ("COMPANY".equals(userRole) && !companyServiceClient.isCompanyIdValid(companyId.toString())) {
-        //     throw new IllegalArgumentException("해당 회사의 제품을 관리할 수 있는 권한이 없습니다.");
-        // }
-//    }
-//}
+        if ("HUB_MANAGER".equals(userRole)) {
+            UserData userHubId = authServiceClient.getUserByToken(token).getData();
+            if (hubId != null && !hubId.equals(userHubId)) {
+                throw new IllegalArgumentException("해당 허브의 제품을 관리할 권한이 없습니다.");
+            }
+        } else if ("COMPANY_MANAGER".equals(userRole)) {
+            UserData userCompanyId = authServiceClient.getUserByToken(token).getData();
+            if (companyId != null && !companyId.equals(userCompanyId)) {
+                throw new IllegalArgumentException("해당 회사의 제품을 관리할 권한이 없습니다.");
+            }
+        } else {
+            throw new IllegalArgumentException("권한이 부족합니다.");
+        }
+    }
+}

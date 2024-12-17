@@ -49,17 +49,23 @@ public class DeliveryCompanyRouteRecordService {
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * ?")
-    public void setOrderSequence() {
+    public List<String> setOrderSequence() {
+        List<String> messages = new ArrayList<>();
+
         List<DeliveryCompanyRouteRecord> deliveryCompanyRouteRecords = deliveryCompanyRouteRecordRepository.findAllByIsDeletedFalseGroupedByDeliveryManager();
 
         Map<UUID, List<DeliveryCompanyRouteRecord>> groupedByDeliveryManager = deliveryCompanyRouteRecords.stream()
                 .collect(Collectors.groupingBy(record -> record.getDeliveryManager().getId()));
 
+        int i = 0;
         for (Map.Entry<UUID, List<DeliveryCompanyRouteRecord>> entry : groupedByDeliveryManager.entrySet()) {
+            i++;
             List<DeliveryCompanyRouteRecord> records = entry.getValue();
 
             List<Mono<LocationData>> locationDataMonoList = new ArrayList<>();
 
+            StringBuilder responseMessage = new StringBuilder();
+            responseMessage.append("배송 담당자: " + records.get(0).getDeliveryManager().getId());
             for (DeliveryCompanyRouteRecord record : records) {
                 String city = record.getCity();
                 String roadName = record.getRoadName();
@@ -100,9 +106,15 @@ public class DeliveryCompanyRouteRecordService {
                         slackMessage.append("예상 거리: ").append(String.format("%.2f", distanceInKilometers)).append(" km, 예상 시간: ").append(durationInMinutes).append(" 분");
 
                         // TODO 슬랙메시지 발송
+
+                        responseMessage.append(slackMessage);
+                        messages.add(responseMessage.toString());
+
                     })
                     .subscribe();
         }
+
+        return messages;
     }
 
     private List<Integer> getWaypointsOrder(List<LocationData> locationDatas) {

@@ -44,7 +44,7 @@ public class DeliveryCompanyRouteRecordController {
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
         DeliveryCompanyRouteRecordResponse routeRecord = deliveryCompanyRouteRecordService.getDeliveryCompanyRouteRecord(deliveryRouteId, userId, role);
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery created successfully", routeRecord));
+        return ResponseEntity.ok(ApiResponseDto.success("getDelivery company route successfully", routeRecord));
     }
 
     @Operation(summary = "업체 경로 기록 수정",
@@ -81,7 +81,7 @@ public class DeliveryCompanyRouteRecordController {
             @RequestHeader(value = "X-Role", required = true) String role
     ) {
         UUID routeRecordId = deliveryCompanyRouteRecordService.updateCompanyRouteRecordDeliveryManager(deliveryRouteId, deliveryManagerId, userId, role);
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery route status updated successfully", routeRecordId));
+        return ResponseEntity.ok(ApiResponseDto.success("Delivery route dlievery manager updated successfully", routeRecordId));
     }
 
     @Operation(summary = "업체 경로 기록 삭제")
@@ -105,7 +105,6 @@ public class DeliveryCompanyRouteRecordController {
     ) {
         Page<DeliveryCompanyRouteRecordResponse> routeRecords = deliveryCompanyRouteRecordService.getDeliveryCompanyRouteRecords(deliveryRouteSearchRequest, pageable, userId, role);
 
-        return ResponseEntity.ok(ApiResponseDto.success("Delivery company route records retrieved successfully", routeRecords));
+        return ResponseEntity.ok(ApiResponseDto.success("getDelivery company routes successfully", routeRecords));
     }
-
 }

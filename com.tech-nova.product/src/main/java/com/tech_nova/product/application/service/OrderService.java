@@ -1,14 +1,18 @@
 package com.tech_nova.product.application.service;
 
+import com.tech_nova.product.application.dto.OrderProductResponse;
 import com.tech_nova.product.application.dto.OrderRequest;
 import com.tech_nova.product.application.dto.OrderResponse;
-import com.tech_nova.product.application.dto.OrderProductResponse;
 import com.tech_nova.product.domain.model.AuditField;
 import com.tech_nova.product.domain.model.Order;
 import com.tech_nova.product.domain.model.OrderProduct;
+import com.tech_nova.product.domain.model.Product;
 import com.tech_nova.product.domain.repository.OrderRepository;
 import com.tech_nova.product.domain.repository.ProductRepository;
-import com.tech_nova.product.domain.model.Product;
+import com.tech_nova.product.infrastructure.client.DeliveryServiceClient;
+import com.tech_nova.product.infrastructure.dto.DeliveryRequest;
+import com.tech_nova.product.presentation.dto.ApiResponseDto;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,9 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -26,13 +30,46 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final DeliveryServiceClient deliveryServiceClient;
 
-    @Transactional
-    public void createOrder(OrderRequest request) {
+    @Transactional public UUID createOrder(OrderRequest request, UUID userId, String role) {
+
         Order order = buildOrderFromRequest(request);
         processOrderProducts(request, order);
         orderRepository.save(order);
+
+        DeliveryRequest deliveryRequest = DeliveryRequest.builder()
+                .orderId(order.getOrderId())
+                .recipientCompanyId(request.getReceivingCompanyId())
+                .province(request.getProvince())
+                .city(request.getCity())
+                .district(request.getDistrict())
+                .roadName(request.getRoadName())
+                .detailAddress(request.getDetailAddress())
+                .build();
+
+        try {
+            // 배송 생성 API 호출
+            ApiResponseDto<UUID> deliveryResponse = deliveryServiceClient.createDelivery(
+                    deliveryRequest,
+                    "orderApp-001", // X-Order-Origin 헤더
+                     userId, // 사용자 ID
+                     role // 사용자 역할
+             );
+
+            // 배송 ID를 반환받아 Order 객체에 연결
+            UUID deliveryId = deliveryResponse.getData();
+            if (deliveryId == null) {
+                throw new IllegalStateException("배송 ID가 반환되지 않았습니다.");
+            }
+            return order.getOrderId(); // 주문 ID 반환
+        } catch (FeignException e) {
+            throw new RuntimeException("배송 생성 중 오류가 발생했습니다: " + e.contentUTF8(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("배송 생성 중 오류가 발생했습니다.", e);
+        }
     }
+
 
     @Transactional
     public void cancelOrder(UUID orderId) {
